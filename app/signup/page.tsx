@@ -113,7 +113,7 @@ export default function SignupPage() {
 
      
       
-
+localStorage.setItem("pendingEmail", formData.email);
      
       // Show confirmation message
       setSuccessMessage(
@@ -121,11 +121,10 @@ export default function SignupPage() {
       );
 
       // Optional redirect after signup confirmation
-      setTimeout(() => {
-        if (formData.role === "photographer") {
-          router.push("/dashboard/settings");
-        }
-      }, 2500); // waits 2.5 seconds so the user sees success message
+           setTimeout(() => {
+        router.push("/verify-email");
+      }, 2000);
+
 
       // Reset form
       setFormData({

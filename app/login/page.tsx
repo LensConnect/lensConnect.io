@@ -15,7 +15,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Camera } from "lucide-react";
-import { toast } from "sonner"; // npm i sonner
+import { toast } from "sonner"; 
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");

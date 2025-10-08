@@ -1,94 +1,102 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import Link from "next/link"
-import { supabase } from "@/lib/supabaseClient"
-import { useRouter } from "next/navigation"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Loader2 } from "lucide-react"
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabaseClient";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Mail, Loader2 } from "lucide-react";
 
 export default function VerifyEmailPage() {
-  const [checking, setChecking] = useState(true)
-  const [isVerified, setIsVerified] = useState(false)
-  const router = useRouter()
+  const router = useRouter();
+  const [isChecking, setIsChecking] = useState(false);
+  const [resendMessage, setResendMessage] = useState<string | null>(null);
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
 
   useEffect(() => {
-    const checkEmailVerification = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
+    // 🔹 Get pending email from signup
+    const storedEmail = localStorage.getItem("pendingEmail");
+    setPendingEmail(storedEmail);
 
-      if (!user) {
-        // If user is not logged in, return to login
-        router.push("/login")
-        return
-      }
+    // 🔹 Poll every 5 seconds to see if email is verified
+    const interval = setInterval(async () => {
+      setIsChecking(true);
+      const { data } = await supabase.auth.getUser();
+      const user = data?.user;
 
-      if (user.email_confirmed_at) {
-        // If email is verified, redirect to dashboard
-        setIsVerified(true)
-        setTimeout(() => router.push("/dashboard"), 2000)
-      }
+      if (user?.email_confirmed_at) {
+        // Check user metadata for their role
+        const role = user.user_metadata?.role || "client";
+        localStorage.removeItem("pendingEmail");
 
-      setChecking(false)
-    }
-
-    checkEmailVerification()
-
-    // 🔄 Listen for auth changes (like verification)
-    const { data: listener } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (event === "TOKEN_REFRESHED" || event === "SIGNED_IN") {
-          const user = session?.user
-          if (user?.email_confirmed_at) {
-            setIsVerified(true)
-            setTimeout(() => router.push("/dashboard"), 2000)
-          }
+        if (role === "photographer") {
+          router.push("/dashboard/photographer");
+        } else {
+          router.push("/dashboard/client");
         }
       }
-    )
 
-    return () => {
-      listener.subscription.unsubscribe()
+      setIsChecking(false);
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [router]);
+
+  // 🔹 Resend verification email
+  const handleResend = async () => {
+    if (!pendingEmail) return;
+    setResendMessage(null);
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email: pendingEmail,
+    });
+
+    if (error) {
+      setResendMessage("Failed to resend verification email. Try again.");
+    } else {
+      setResendMessage("Verification email sent again. Check your inbox!");
     }
-  }, [router])
+  };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/30 px-4">
-      <Card className="max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-muted/30 px-4 py-12">
+      <Card className="max-w-md w-full text-center">
         <CardHeader>
-          <CardTitle className="text-center">Verify Your Email</CardTitle>
+          <CardTitle className="text-2xl font-semibold flex justify-center items-center gap-2">
+            <Mail className="w-6 h-6 text-primary" /> Verify your email
+          </CardTitle>
         </CardHeader>
-        <CardContent className="text-center space-y-4">
-          {checking ? (
-            <div className="flex flex-col items-center gap-2">
-              <Loader2 className="h-6 w-6 animate-spin text-primary" />
-              <p className="text-muted-foreground">Checking verification status...</p>
-            </div>
-          ) : isVerified ? (
-            <p className="text-green-600 font-medium">
-              ✅ Email verified! Redirecting to dashboard...
-            </p>
-          ) : (
-            <>
-              <p className="text-muted-foreground">
-                We’ve sent a verification link to your email. Please confirm your
-                address before continuing.
+
+        <CardContent className="space-y-6">
+          <p className="text-muted-foreground">
+            We’ve sent a verification link to{" "}
+            <strong>{pendingEmail || "your email"}</strong>. <br />
+            Please check your inbox and click the link to activate your account.
+          </p>
+
+          <div className="flex justify-center">
+            {isChecking ? (
+              <div className="flex items-center gap-2 text-primary">
+                <Loader2 className="animate-spin w-5 h-5" />
+                <span>Checking verification status...</span>
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500">
+                Once verified, you’ll be redirected automatically.
               </p>
-              <Button
-                onClick={() => supabase.auth.refreshSession()}
-                className="w-full"
-              >
-                I’ve verified my email
-              </Button>
-              <Button asChild variant="outline" className="w-full">
-                <Link href="/login">Back to login</Link>
-              </Button>
-            </>
-          )}
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Button onClick={handleResend} className="w-full">
+              Resend verification email
+            </Button>
+            {resendMessage && (
+              <p className="text-sm text-green-600">{resendMessage}</p>
+            )}
+          </div>
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

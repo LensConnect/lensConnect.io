@@ -174,7 +174,19 @@ export default function DashboardPage() {
   )
 }
 
-function BookingCard({ booking, showActions = false }: { booking: any; showActions?: boolean }) {
+type Booking = {
+  id: string;
+  type: string;
+  location: string;
+  status: "pending" | "confirmed" | "completed" | "cancelled";
+  date: Date;
+  duration: number;
+  totalPrice: number;
+  notes?: string;
+  photographerId: string;
+};
+
+function BookingCard({ booking, showActions = false }: { booking: Booking; showActions?: boolean }) {
   const statusConfig = {
     pending: { icon: AlertCircle, color: "text-yellow-600", bg: "bg-yellow-50", label: "Pending" },
     confirmed: { icon: CheckCircle2, color: "text-green-600", bg: "bg-green-50", label: "Confirmed" },
@@ -182,7 +194,7 @@ function BookingCard({ booking, showActions = false }: { booking: any; showActio
     cancelled: { icon: XCircle, color: "text-red-600", bg: "bg-red-50", label: "Cancelled" },
   }
 
-  const status = statusConfig[booking.status as keyof typeof statusConfig]
+  const status = statusConfig[booking.status]
   const StatusIcon = status.icon
 
   return (

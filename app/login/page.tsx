@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState,useEffect  } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
@@ -33,6 +33,21 @@ export default function LoginPage() {
   const [formErrors, setFormErrors] = useState<FormErrors>({});
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem("userData");
+    if (storedUser) {
+      try {
+        const parsed = JSON.parse(storedUser);
+        setFormData({
+          email: parsed.email || "",
+          password: parsed.password || "", 
+        });
+      } catch (err) {
+        console.error("Failed to parse stored user:", err);
+      }
+    }
+  }, []);
 
   const validate = () => {
     const errors: FormErrors = {};

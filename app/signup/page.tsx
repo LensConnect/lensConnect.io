@@ -138,6 +138,7 @@ localStorage.setItem("pendingEmail", formData.email);
         id: user.id,
   email: user.email,
   fullName: formData.fullName,
+  password:formData.password,
   role: formData.role,
       }
 

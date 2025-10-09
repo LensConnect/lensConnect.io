@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { supabase } from "@/lib/supabaseClient"; // make sure you created this file
+import { supabase } from "@/lib/supabaseClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,40 +15,65 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Camera } from "lucide-react";
-import { toast } from "sonner"; 
+import { toast } from "sonner";
+
+interface FormData {
+  email: string;
+  password: string;
+}
+
+interface FormErrors {
+  email?: string;
+  password?: string;
+  general?: string;
+}
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [formData, setFormData] = useState<FormData>({ email: "", password: "" });
+  const [formErrors, setFormErrors] = useState<FormErrors>({});
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
+  const validate = () => {
+    const errors: FormErrors = {};
+    if (!formData.email) errors.email = "Email is required";
+    if (!formData.password) errors.password = "Password is required";
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormErrors((prev) => ({ ...prev, [name]: "" }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
+    if (!validate()) return;
 
+    setIsLoading(true);
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+        email: formData.email,
+        password: formData.password,
       });
 
       if (error) {
+        setFormErrors((prev) => ({ ...prev, general: error.message }));
         toast.error(error.message);
-        throw error;
+        return;
       }
 
       toast.success("Login successful 🎉");
-
-      // Store user info locally (optional)
       if (data.user) {
         localStorage.setItem("user_email", data.user.email || "");
         localStorage.setItem("user_id", data.user.id);
       }
-
-      router.push("/dashboard"); // change to your desired route
-    } catch (error) {
-      console.error("Login failed:", error);
+      router.push("/dashboard");
+    } catch (err) {
+      setFormErrors((prev) => ({ ...prev, general: "Login failed. Please try again." }));
+      console.error("Login failed:", err);
     } finally {
       setIsLoading(false);
     }
@@ -81,12 +106,16 @@ export default function LoginPage() {
                 <Label htmlFor="email">Email</Label>
                 <Input
                   id="email"
+                  name="email"
                   type="email"
                   placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  value={formData.email}
+                  onChange={handleChange}
                   required
                 />
+                {formErrors.email && (
+                  <p className="text-red-500 text-xs mt-1">{formErrors.email}</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -101,13 +130,21 @@ export default function LoginPage() {
                 </div>
                 <Input
                   id="password"
+                  name="password"
                   type="password"
                   placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  value={formData.password}
+                  onChange={handleChange}
                   required
                 />
+                {formErrors.password && (
+                  <p className="text-red-500 text-xs mt-1">{formErrors.password}</p>
+                )}
               </div>
+
+              {formErrors.general && (
+                <p className="text-red-500 text-xs mt-2">{formErrors.general}</p>
+              )}
 
               <Button
                 type="submit"

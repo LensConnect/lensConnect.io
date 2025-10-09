@@ -103,6 +103,7 @@ export default function SignupPage() {
             full_name: formData.fullName,
             role: formData.role,
           },
+          emailRedirectTo: `${window.location.origin}/verify-email`,
         },
       });
 
@@ -121,9 +122,7 @@ localStorage.setItem("pendingEmail", formData.email);
       );
 
       // Optional redirect after signup confirmation
-           setTimeout(() => {
-        router.push("/verify-email");
-      }, 2000);
+          
 
 
       // Reset form

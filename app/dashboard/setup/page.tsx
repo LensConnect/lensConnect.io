@@ -54,7 +54,7 @@ export default function SetupPage() {
       <div className="container mx-auto px-4 py-12 max-w-2xl">
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">Complete Your Profile</h1>
-          <p className="text-muted-foreground">Let's set up your photographer profile to start getting bookings</p>
+          <p className="text-muted-foreground">Let&apos;s set up your photographer profile to start getting bookings</p>
           <Progress value={progress} className="mt-4" />
         </div>
 
@@ -127,7 +127,7 @@ export default function SetupPage() {
           <Card>
             <CardHeader>
               <CardTitle>Set Your Rate</CardTitle>
-              <CardDescription>What's your hourly rate for bookings?</CardDescription>
+              <CardDescription>What&apos;s your hourly rate for bookings?</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">

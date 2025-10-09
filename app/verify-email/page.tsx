@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Mail, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
+
 export default function VerifyEmailPage() {
   const router = useRouter();
   const [isChecking, setIsChecking] = useState(false);

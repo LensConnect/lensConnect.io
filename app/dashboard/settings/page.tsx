@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
 import { supabase } from "@/lib/supabaseClient"
-import { useAuth } from "@/lib/auth-context"
+
 import { motion, AnimatePresence } from "framer-motion"
 import { Header } from "@/components/header"
 import { CheckCircle, Camera, Briefcase, User } from "lucide-react"
@@ -52,7 +52,7 @@ const availableSpecialties = [
 
 export default function PhotographerSetup() {
   const router = useRouter()
-  const { user } = useAuth()
+  
 
   const [step, setStep] = useState(1)
   const [uploading, setUploading] = useState(false)
@@ -128,7 +128,7 @@ export default function PhotographerSetup() {
 
   const handleBack = () => setStep((prev) => prev - 1)
 
-  /** ✅ Upload image to Supabase Storage */
+  
   const handleUpload = async () => {
   if (!imageFile) return alert("Please select an image first.")
 
@@ -170,7 +170,12 @@ export default function PhotographerSetup() {
     e.preventDefault()
     const isValid = validateStep()
     if (!isValid) return
-    if (!user) return alert("You must be logged in.")
+
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    if (userError || !user) {
+      alert("You must be logged in.")
+      return
+    }
 
     const { error } = await supabase.from("photographer_profiles").insert({
       user_id: user.id, 

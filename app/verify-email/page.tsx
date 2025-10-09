@@ -28,7 +28,7 @@ export default function VerifyEmailPage() {
     if (access_token && refresh_token) {
       supabase.auth
         .setSession({ access_token, refresh_token })
-        .then(({ data, error }) => { 
+        .then(({ data, error }) => {  
           if (error) {
             console.error("Failed to set session:", error.message);
             toast.error("Failed to verify email link.");

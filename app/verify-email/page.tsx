@@ -6,55 +6,92 @@ import { supabase } from "@/lib/supabaseClient";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Mail, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 export default function VerifyEmailPage() {
   const router = useRouter();
   const [isChecking, setIsChecking] = useState(false);
   const [resendMessage, setResendMessage] = useState<string | null>(null);
   const [pendingEmail, setPendingEmail] = useState<string | null>(null);
+  const [verified, setVerified] = useState(false);
 
+  // 🔹 Handle access_token and refresh_token from email link
   useEffect(() => {
-    // 🔹 Get pending email from signup
+    const hash = window.location.hash; // e.g., #access_token=XYZ&refresh_token=ABC&type=signup
+    if (!hash) return;
+
+    const params = new URLSearchParams(hash.substring(1)); // remove #
+    const access_token = params.get("access_token");
+    const refresh_token = params.get("refresh_token");
+
+    if (access_token && refresh_token) {
+      supabase.auth
+        .setSession({ access_token, refresh_token })
+        .then(({ data, error }) => {
+          if (error) {
+            console.error("Failed to set session:", error.message);
+            toast.error("Failed to verify email link.");
+          } else {
+            toast.success("Email verified! You are now logged in.");
+          }
+
+          // Clean URL
+          window.history.replaceState({}, document.title, "/verify-email");
+        });
+    }
+  }, []);
+
+  // 🔹 Get pending email from localStorage
+  useEffect(() => {
     const storedEmail = localStorage.getItem("pendingEmail");
     setPendingEmail(storedEmail);
+  }, []);
 
-    // 🔹 Poll every 5 seconds to see if email is verified
-    const interval = setInterval(async () => {
+  // 🔹 Check email verification status and redirect
+  useEffect(() => {
+    if (verified) return; // stop polling if already verified
+
+    const checkVerification = async () => {
       setIsChecking(true);
       const { data } = await supabase.auth.getUser();
       const user = data?.user;
 
       if (user?.email_confirmed_at) {
-        // Check user metadata for their role
-        const role = user.user_metadata?.role || "client";
+        setVerified(true);
         localStorage.removeItem("pendingEmail");
 
+        const role = user.user_metadata?.role || "client";
         if (role === "photographer") {
           router.push("/dashboard/setup");
         } else {
           router.push("/client/onboarding");
         }
       }
-
       setIsChecking(false);
-    }, 5000);
+    };
+
+    checkVerification(); // check immediately
+    const interval = setInterval(checkVerification, 5000);
 
     return () => clearInterval(interval);
-  }, [router]);
+  }, [router, verified]);
 
   // 🔹 Resend verification email
   const handleResend = async () => {
     if (!pendingEmail) return;
     setResendMessage(null);
+
     const { error } = await supabase.auth.resend({
       type: "signup",
       email: pendingEmail,
     });
 
     if (error) {
+      console.error("Resend error:", error.message);
       setResendMessage("Failed to resend verification email. Try again.");
     } else {
       setResendMessage("Verification email sent again. Check your inbox!");
+      toast.success("Verification email resent!");
     }
   };
 

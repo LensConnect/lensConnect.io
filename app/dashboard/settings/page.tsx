@@ -172,7 +172,7 @@ export default function SettingsPage() {
                     Available for bookings
                   </Label>
                   <p className="text-sm text-muted-foreground">
-                    When disabled, clients won't be able to send booking requests
+                    When disabled, clients won &apos;t be able to send booking requests
                   </p>
                 </div>
                 <Switch id="availability" checked={availability} onCheckedChange={setAvailability} />

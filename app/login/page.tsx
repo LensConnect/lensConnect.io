@@ -59,6 +59,8 @@ export default function LoginPage() {
         password: formData.password,
       });
 
+      
+
       if (error) {
         setFormErrors((prev) => ({ ...prev, general: error.message }));
         toast.error(error.message);

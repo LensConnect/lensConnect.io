@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { useAuth } from "@/lib/auth-context"
+
 import { Header } from "@/components/header"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -31,7 +31,7 @@ const availableSpecialties = [
 ]
 
 export default function SettingsPage() {
-  const { user, isLoading } = useAuth()
+  
   const router = useRouter()
 
   const [bio, setBio] = useState("")
@@ -40,34 +40,7 @@ export default function SettingsPage() {
   const [specialties, setSpecialties] = useState<string[]>([])
   const [availability, setAvailability] = useState(true)
 
-  useEffect(() => {
-    if (!isLoading && (!user || user.role !== "photographer")) {
-      router.push("/login")
-    }
-  }, [user, isLoading, router])
-
-  useEffect(() => {
-    if (user) {
-      const photographerProfile = mockPhotographers.find((p) => p.userId === user.id) || mockPhotographers[0]
-      setBio(photographerProfile.bio)
-      setLocation(photographerProfile.location)
-      setHourlyRate(photographerProfile.hourlyRate.toString())
-      setSpecialties(photographerProfile.specialties)
-      setAvailability(photographerProfile.availability)
-    }
-  }, [user])
-
-  if (isLoading || !user || user.role !== "photographer") {
-    return null
-  }
-
-  const toggleSpecialty = (specialty: string) => {
-    if (specialties.includes(specialty)) {
-      setSpecialties(specialties.filter((s) => s !== specialty))
-    } else {
-      setSpecialties([...specialties, specialty])
-    }
-  }
+ 
 
   const handleSave = () => {
     // In a real app, save to database
@@ -148,7 +121,7 @@ export default function SettingsPage() {
                     key={specialty}
                     variant={specialties.includes(specialty) ? "default" : "outline"}
                     className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors"
-                    onClick={() => toggleSpecialty(specialty)}
+                   
                   >
                     {specialty}
                     {specialties.includes(specialty) && <X className="ml-1 h-3 w-3" />}

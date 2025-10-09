@@ -2,7 +2,7 @@
 
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { useAuth } from "@/lib/auth-context"
+
 import { Header } from "@/components/header"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -24,21 +24,12 @@ import { mockBookings, mockPhotographers } from "@/lib/mock-data"
 import Link from "next/link"
 
 export default function DashboardPage() {
-  const { user, isLoading } = useAuth()
+  
   const router = useRouter()
 
-  useEffect(() => {
-    if (!isLoading && (!user || user.role !== "photographer")) {
-      router.push("/login")
-    }
-  }, [user, isLoading, router])
-
-  if (isLoading || !user || user.role !== "photographer") {
-    return null
-  }
-
+  
   // Mock data for the current photographer
-  const photographerProfile = mockPhotographers.find((p) => p.userId === user.id) || mockPhotographers[0]
+  const photographerProfile = mockPhotographers.find((p) => p.userId === "") || mockPhotographers[0]
   const photographerBookings = mockBookings.filter((b) => b.photographerId === photographerProfile.userId)
 
   const upcomingBookings = photographerBookings.filter((b) => b.status === "confirmed" && b.date > new Date())
@@ -63,7 +54,7 @@ export default function DashboardPage() {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
           <div>
             <h1 className="text-3xl font-bold">Dashboard</h1>
-            <p className="text-muted-foreground">Welcome back, {user.name}</p>
+           
           </div>
           <div className="flex gap-3">
             <Button variant="outline" asChild className="bg-transparent">

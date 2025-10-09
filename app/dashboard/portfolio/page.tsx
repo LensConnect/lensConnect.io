@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { useAuth } from "@/lib/auth-context"
+
 import { Header } from "@/components/header"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -15,26 +15,11 @@ import { mockPhotographers } from "@/lib/mock-data"
 import Link from "next/link"
 
 export default function PortfolioPage() {
-  const { user, isLoading } = useAuth()
+ 
   const router = useRouter()
   const [portfolioImages, setPortfolioImages] = useState<string[]>([])
 
-  useEffect(() => {
-    if (!isLoading && (!user || user.role !== "photographer")) {
-      router.push("/login")
-    }
-  }, [user, isLoading, router])
-
-  useEffect(() => {
-    if (user) {
-      const photographerProfile = mockPhotographers.find((p) => p.userId === user.id) || mockPhotographers[0]
-      setPortfolioImages(photographerProfile.portfolioImages)
-    }
-  }, [user])
-
-  if (isLoading || !user || user.role !== "photographer") {
-    return null
-  }
+  
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files

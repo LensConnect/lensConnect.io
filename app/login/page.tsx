@@ -16,10 +16,12 @@ import {
 } from "@/components/ui/card";
 import { Camera } from "lucide-react";
 import { toast } from "sonner";
+import { profile } from "console";
 
 interface FormData {
   email: string;
   password: string;
+  role:string;
 }
 
 interface FormErrors {
@@ -29,7 +31,7 @@ interface FormErrors {
 }
 
 export default function LoginPage() {
-  const [formData, setFormData] = useState<FormData>({ email: "", password: "" });
+  const [formData, setFormData] = useState<FormData>({ email: "", password: "", role: "" });
   const [formErrors, setFormErrors] = useState<FormErrors>({});
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
@@ -42,12 +44,25 @@ export default function LoginPage() {
         setFormData({
           email: parsed.email || "",
           password: parsed.password || "", 
+          role: parsed.role || "",
         });
       } catch (err) {
         console.error("Failed to parse stored user:", err);
       }
     }
   }, []);
+
+ useEffect(()=>{
+  const userData = localStorage.getItem("userData");
+  if(userData){
+    try{
+      const parsed = JSON.parse(userData);
+      setFormData((prev) => ({...prev, role: parsed.role || ""}))
+    }catch(err){
+    console.error("Failed to parse user data:", err);
+  }
+  }
+ },[])
 
   const validate = () => {
     const errors: FormErrors = {};
@@ -82,12 +97,33 @@ export default function LoginPage() {
         return;
       }
 
+      const { data: profileData, error: profileError } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("email", formData.email)
+        .single();
+
+      if (profileError || !profileData) {
+        setFormErrors((prev) => ({ ...prev, general: "Failed to fetch user profile." }));
+        toast.error("Failed to fetch user profile.");
+        return;
+      }
+
+      const role = profileData.role;
+
       toast.success("Login successful 🎉");
       if (data.user) {
         localStorage.setItem("user_email", data.user.email || "");
         localStorage.setItem("user_id", data.user.id);
+       
       }
+
+     
+     if(role === "photographer"){
       router.push("/dashboard");
+     }else{
+      router.push("client/onboarding");
+     }
     } catch (err) {
       setFormErrors((prev) => ({ ...prev, general: "Login failed. Please try again." }));
       console.error("Login failed:", err);

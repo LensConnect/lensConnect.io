@@ -122,6 +122,7 @@ localStorage.setItem("pendingEmail", formData.email);
       );
 
       // Optional redirect after signup confirmation
+      
           
 
 
@@ -143,6 +144,13 @@ localStorage.setItem("pendingEmail", formData.email);
       }
 
       localStorage.setItem("userData", JSON.stringify(userData))
+
+      if(formData.role === "photographer"){
+        router.push("/dashboard");
+      }else{
+        router.push("client/onboarding")
+      }
+
     } catch (error) {
       if (error instanceof Error) {
         console.group("🧩 Supabase Signup Error");

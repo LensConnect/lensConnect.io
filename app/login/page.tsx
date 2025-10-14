@@ -1,6 +1,6 @@
 "use client";
 
-import { useState,useEffect  } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
@@ -16,117 +16,41 @@ import {
 } from "@/components/ui/card";
 import { Camera } from "lucide-react";
 import { toast } from "sonner";
-import { profile } from "console";
-
-interface FormData {
-  email: string;
-  password: string;
-  role:string;
-}
-
-interface FormErrors {
-  email?: string;
-  password?: string;
-  general?: string;
-}
 
 export default function LoginPage() {
-  const [formData, setFormData] = useState<FormData>({ email: "", password: "", role: "" });
-  const [formErrors, setFormErrors] = useState<FormErrors>({});
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
-  useEffect(() => {
-    const storedUser = localStorage.getItem("userData");
-    if (storedUser) {
-      try {
-        const parsed = JSON.parse(storedUser);
-        setFormData({
-          email: parsed.email || "",
-          password: parsed.password || "", 
-          role: parsed.role || "",
-        });
-      } catch (err) {
-        console.error("Failed to parse stored user:", err);
-      }
-    }
-  }, []);
-
- useEffect(()=>{
-  const userData = localStorage.getItem("userData");
-  if(userData){
-    try{
-      const parsed = JSON.parse(userData);
-      setFormData((prev) => ({...prev, role: parsed.role || ""}))
-    }catch(err){
-    console.error("Failed to parse user data:", err);
-  }
-  }
- },[])
-
-  const validate = () => {
-    const errors: FormErrors = {};
-    if (!formData.email) errors.email = "Email is required";
-    if (!formData.password) errors.password = "Password is required";
-    setFormErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-    setFormErrors((prev) => ({ ...prev, [name]: "" }));
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validate()) return;
-
     setIsLoading(true);
+
     try {
+      // Use Supabase directly to get user metadata
       const { data, error } = await supabase.auth.signInWithPassword({
-        email: formData.email,
-        password: formData.password,
+        email,
+        password,
       });
 
-      
-
       if (error) {
-        setFormErrors((prev) => ({ ...prev, general: error.message }));
         toast.error(error.message);
-        return;
+        throw error;
       }
-
-      const { data: profileData, error: profileError } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("email", formData.email)
-        .single();
-
-      if (profileError || !profileData) {
-        setFormErrors((prev) => ({ ...prev, general: "Failed to fetch user profile." }));
-        toast.error("Failed to fetch user profile.");
-        return;
-      }
-
-      const role = profileData.role;
 
       toast.success("Login successful 🎉");
-      if (data.user) {
-        localStorage.setItem("user_email", data.user.email || "");
-        localStorage.setItem("user_id", data.user.id);
-       
-      }
 
-     
-     if(role === "photographer"){
-      router.push("/dashboard");
-     }else{
-      router.push("client/onboarding");
-     }
-    } catch (err) {
-      setFormErrors((prev) => ({ ...prev, general: "Login failed. Please try again." }));
-      console.error("Login failed:", err);
+      // Check user's role from metadata to redirect appropriately
+      const userRole = data.user?.user_metadata?.role || "client";
+
+      if (userRole === "photographer") {
+        router.push("/dashboard");
+      } else {
+        router.push("/client-dashboard");
+      }
+    } catch (error) {
+      console.error("Login failed:", error);
     } finally {
       setIsLoading(false);
     }
@@ -159,16 +83,12 @@ export default function LoginPage() {
                 <Label htmlFor="email">Email</Label>
                 <Input
                   id="email"
-                  name="email"
                   type="email"
                   placeholder="you@example.com"
-                  value={formData.email}
-                  onChange={handleChange}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   required
                 />
-                {formErrors.email && (
-                  <p className="text-red-500 text-xs mt-1">{formErrors.email}</p>
-                )}
               </div>
 
               <div className="space-y-2">
@@ -183,34 +103,22 @@ export default function LoginPage() {
                 </div>
                 <Input
                   id="password"
-                  name="password"
                   type="password"
                   placeholder="••••••••"
-                  value={formData.password}
-                  onChange={handleChange}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   required
                 />
-                {formErrors.password && (
-                  <p className="text-red-500 text-xs mt-1">{formErrors.password}</p>
-                )}
               </div>
 
-              {formErrors.general && (
-                <p className="text-red-500 text-xs mt-2">{formErrors.general}</p>
-              )}
-
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={isLoading}
-              >
+              <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? "Logging in..." : "Log in"}
               </Button>
             </form>
 
             <div className="mt-6 text-center text-sm">
               <span className="text-muted-foreground">
-                Don’t have an account?{" "}
+                Don't have an account?{" "}
               </span>
               <Link
                 href="/signup"

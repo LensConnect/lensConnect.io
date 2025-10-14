@@ -33,6 +33,12 @@ export function Header() {
 
         <nav className="hidden md:flex items-center gap-6">
           <Link
+            href="/search"
+            className="text-sm font-medium hover:text-primary transition-colors"
+          >
+            Find Photographers
+          </Link>
+          <Link
             href="/how-it-works"
             className="text-sm font-medium hover:text-primary transition-colors"
           >

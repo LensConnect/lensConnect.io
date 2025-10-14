@@ -18,6 +18,7 @@ import {
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Camera } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
+import { toast } from "sonner";
 
 interface FormData {
   fullName: string;
@@ -50,17 +51,14 @@ export default function SignupPage() {
 
   const [errors, setErrors] = useState<FormErrors>({});
   const [isLoading, setIsLoading] = useState(false);
-  const [successMessage, setSuccessMessage] = useState<string>("");
   const router = useRouter();
 
-  // Handle input change
   const handleOnChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
     setErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
-  // Validate form
   const validateForm = (): FormErrors => {
     const newErrors: FormErrors = {};
     if (!formData.fullName) newErrors.fullName = "Full name is required";
@@ -69,6 +67,8 @@ export default function SignupPage() {
       newErrors.email = "Enter a valid email address.";
     if (!formData.role) newErrors.role = "Please select a role";
     if (!formData.password) newErrors.password = "Password is required.";
+    else if (formData.password.length < 8)
+      newErrors.password = "Password must be at least 8 characters.";
     if (!formData.confirmPassword)
       newErrors.confirmPassword = "Confirm your password.";
     if (
@@ -81,9 +81,8 @@ export default function SignupPage() {
     return newErrors;
   };
 
-  // Handle signup submit
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
 
     const validationErrors = validateForm();
     setErrors(validationErrors);
@@ -91,7 +90,6 @@ export default function SignupPage() {
     if (Object.keys(validationErrors).length > 0) return;
 
     setIsLoading(true);
-    setSuccessMessage("");
 
     try {
       // Sign up user with Supabase
@@ -103,7 +101,8 @@ export default function SignupPage() {
             full_name: formData.fullName,
             role: formData.role,
           },
-          emailRedirectTo: `${window.location.origin}/verify-email`,
+          // Optional: Add email redirect URL
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
         },
       });
 
@@ -112,19 +111,34 @@ export default function SignupPage() {
       const user = data.user;
       if (!user) throw new Error("Signup failed — no user returned");
 
-     
-      
-localStorage.setItem("pendingEmail", formData.email);
-     
-      // Show confirmation message
-      setSuccessMessage(
-        "Signup successful! Please check your email to confirm your account."
-      );
+      // Check if email confirmation is required
+      const needsEmailConfirmation =
+        user.identities && user.identities.length === 0;
 
-      // Optional redirect after signup confirmation
-      
-          
+      if (needsEmailConfirmation) {
+        // Email confirmation is enabled - show verification message
+        toast.success(
+          "Signup successful! Please check your email to confirm your account."
+        );
 
+        setTimeout(() => {
+          router.push(
+            "/verify-email?email=" + encodeURIComponent(formData.email)
+          );
+        }, 2000);
+      } else {
+        // Email confirmation is disabled or user is auto-confirmed
+        toast.success("Account created successfully! Logging you in...");
+
+        // Redirect based on role
+        setTimeout(() => {
+          if (formData.role === "photographer") {
+            router.push("/dashboard");
+          } else {
+            router.push("/client-dashboard");
+          }
+        }, 1500);
+      }
 
       // Reset form
       setFormData({
@@ -134,31 +148,14 @@ localStorage.setItem("pendingEmail", formData.email);
         confirmPassword: "",
         role: defaultRole,
       });
-
-      const userData = {
-        id: user.id,
-  email: user.email,
-  fullName: formData.fullName,
-  password:formData.password,
-  role: formData.role,
-      }
-
-      localStorage.setItem("userData", JSON.stringify(userData))
-
-      if(formData.role === "photographer"){
-        router.push("/dashboard");
-      }else{
-        router.push("client/onboarding")
-      }
-
     } catch (error) {
       if (error instanceof Error) {
-        console.group("🧩 Supabase Signup Error");
-        console.error("Message:", error.message);
-        console.groupEnd();
+        console.error("Supabase Signup Error:", error.message);
+        toast.error(error.message);
         setErrors({ email: error.message });
       } else {
         console.error("Signup failed", error);
+        toast.error("Signup failed. Please try again.");
         setErrors({ email: "Signup failed. Please try again." });
       }
     } finally {
@@ -293,11 +290,6 @@ localStorage.setItem("pendingEmail", formData.email);
                   <p className="text-sm text-red-500">{errors.role}</p>
                 )}
               </div>
-
-              {/* Success Message */}
-              {successMessage && (
-                <p className="text-sm text-green-500">{successMessage}</p>
-              )}
 
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? "Creating account..." : "Create account"}

@@ -31,7 +31,7 @@ export default function HomePage() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
               <Button size="lg" asChild className="text-base">
-                <Link href="/search">Find Photographers</Link>
+                <Link href="/signup?role=client">Find Photographers</Link>
               </Button>
               <Button
                 size="lg"
@@ -200,7 +200,7 @@ export default function HomePage() {
             Join thousands of satisfied clients who found their perfect match
           </p>
           <Button size="lg" asChild className="text-base">
-            <Link href="/search">Get Started</Link>
+            <Link href="/signup?role=client">Get Started</Link>
           </Button>
         </div>
       </section>

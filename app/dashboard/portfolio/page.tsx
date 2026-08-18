@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
+import { useAuth } from "@/lib/auth-context";
 import { Header } from "@/components/header";
 import {
   Card,
@@ -116,14 +117,15 @@ export default function PortfolioPage() {
   };
 
 
+  const { user } = useAuth();
+  
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
     setUploading(true);
 
-    const { data: authData, error: authError } = await supabase.auth.getUser();
-    if (authError || !authData.user) {
+    if (!user) {
       toast.error("You must be logged in to upload images.");
       router.push("/login");
       return;
@@ -133,7 +135,7 @@ export default function PortfolioPage() {
 
     for (const file of files) {
       const ext = file.name.split(".").pop();
-      const fileName = `${authData.user.id}/${Date.now()}_${Math.random()
+      const fileName = `${user.id}/${Date.now()}_${Math.random()
         .toString(36)
         .slice(2)}.${ext}`;
 
@@ -168,45 +170,43 @@ export default function PortfolioPage() {
     e.preventDefault();
     if (!validateForm()) return;
 
-    const { data: authData, error: authError } = await supabase.auth.getUser();
-    if (authError || !authData.user) {
-      toast.error("You must be logged in to submit a portfolio.");
+    if (!user) {
+      toast.error("You must be logged in to create a portfolio.");
       return;
     }
 
-    const { error } = await supabase.from("photographer_portfolio").insert([
-      {
-        photographer_id: authData.user.id,
+    try {
+      const { data, error } = await supabase.from("photographer_portfolio").insert({
+        photographer_id: user.id,
         title: formData.title,
         location: formData.location,
         description: formData.description,
         category: formData.category,
         image_url: formData.image_url,
-      },
-    ]);
-
-    if (error) {
-      toast.error(`Error saving portfolio: ${error.message}`);
-    } else {
-      toast.success("Portfolio uploaded successfully!");
-      fetchPortfolios(); // refresh list
-      setFormData({
-        image_url: [],
-        title: "",
-        location: "",
-        description: "",
-        category: [],
       });
+
+      if (error) {
+        toast.error(`Error saving portfolio: ${error.message}`);
+      } else {
+        toast.success("Portfolio uploaded successfully!");
+        fetchPortfolios(); // refresh list
+        setFormData({
+          image_url: [],
+          title: "",
+          location: "",
+          description: "",
+          category: [],
+        });
+      }
+    } catch (err) {
+      toast.error("Unexpected error occurred.");
     }
   };
 
-  // ─────────────────────────────────────────────
-  // Fetch portfolios
-  // ─────────────────────────────────────────────
+  
   const fetchPortfolios = async () => {
     setLoading(true);
-    const { data: authData } = await supabase.auth.getUser();
-    if (!authData.user) {
+    if (!user) {
       setLoading(false);
       return;
     }
@@ -216,7 +216,7 @@ export default function PortfolioPage() {
       .select(
         "id, title, description, category, location, image_url, created_at"
       )
-      .eq("photographer_id", authData.user.id)
+      .eq("photographer_id", user.id)
       .order("created_at", { ascending: false });
     if (error) console.error(error);
     setPortfolios(data || []);

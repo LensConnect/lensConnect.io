@@ -36,7 +36,7 @@ export function JobCard({ job, onApply, isOwner = false }: JobCardProps) {
   const { user } = useAuth()
   const [openModal, setOpenModal] = useState(false)
   const [message, setMessage] = useState("")
-  const [bidAmount, setBidAmount] = useState<number | "">(job.budget)
+  const [bidAmount, setBidAmount] = useState<number | "">(job.totalPrice)
   const [applied, setApplied] = useState(false)
   const router = useRouter()
 
@@ -55,11 +55,15 @@ export function JobCard({ job, onApply, isOwner = false }: JobCardProps) {
     enabled: isOwner
   })
 
-  // Check if current user has applied
+
+
   const { data: userApplication } = useQuery({
     queryKey: ["job-application", job.id, user?.id],
     queryFn: async () => {
-      if (!user?.id) return null
+     
+    
+      
+       if (!user?.id) return null
       const { data, error } = await supabase
         .from("job_applications")
         .select("*")
@@ -69,20 +73,20 @@ export function JobCard({ job, onApply, isOwner = false }: JobCardProps) {
       
       if (error && error.code !== 'PGRST116') throw error
       if (data) setApplied(true)
-      return data
+      return data 
     },
     enabled: !!user?.id && !isOwner
   })
 
   const handleOpenModal = () => {
     setMessage("")
-    setBidAmount(job.budget)
+    setBidAmount(job.totalPrice)
     setOpenModal(true)
   }
 
   const handleConfirmApply = async () => {
     if (!user) {
-      toast.error("You must be logged in to apply.")
+      toast.error("You must be logged in to apply.") 
       return
     }
 
@@ -175,7 +179,7 @@ export function JobCard({ job, onApply, isOwner = false }: JobCardProps) {
             </div>
             <div className="flex flex-col">
               <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-tighter">Budget</span>
-              <span className="text-sm font-black text-primary">₦{job.budget?.toLocaleString()}</span>
+              <span className="text-sm font-black text-primary">₦{job.totalPrice?.toLocaleString()}</span>
             </div>
           </div>
         </div>
@@ -186,7 +190,9 @@ export function JobCard({ job, onApply, isOwner = false }: JobCardProps) {
               <Users className="h-4 w-4" />
               <span className="text-xs font-bold">{applicationCount} {applicationCount === 1 ? 'Application' : 'Applications'}</span>
             </div>
-              Posted {format(new Date(job.createdAt), "MMM d")}
+              {job.createdAt && !isNaN(new Date(job.createdAt).getTime())
+                ? `Posted ${format(new Date(job.createdAt), "MMM d")}`
+                : "Posted recently"}
           </div>
         )}
       </CardContent>
@@ -235,7 +241,7 @@ export function JobCard({ job, onApply, isOwner = false }: JobCardProps) {
             <div className="grid grid-cols-2 gap-4">
               <div className="p-4 rounded-2xl bg-secondary/50 border border-border/30">
                 <span className="text-[10px] font-black uppercase text-muted-foreground block mb-1">Budget</span>
-                <span className="text-lg font-black text-primary">₦{job.budget?.toLocaleString()}</span>
+                <span className="text-lg font-black text-primary">₦{job.totalPrice?.toLocaleString()}</span>
               </div>
               <div className="p-4 rounded-2xl bg-secondary/50 border border-border/30">
                 <span className="text-[10px] font-black uppercase text-muted-foreground block mb-1">Duration</span>

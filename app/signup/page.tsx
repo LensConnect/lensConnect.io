@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,19 +19,19 @@ import {
 } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Camera } from "lucide-react";
-import { supabase } from "@/lib/supabaseClient";
+import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
 
 interface FormData {
-  fullName: string;
+  fullname: string;
   email: string;
   password: string;
   role: "client" | "photographer";
   confirmPassword: string;
 }
 
-interface FormErrors {
-  fullName?: string;
+interface FormErrors {          
+  fullname?: string;
   email?: string;
   password?: string;
   role?: string;
@@ -43,7 +44,7 @@ export default function SignupPage() {
     (searchParams.get("role") as "client" | "photographer") || "client";
 
   const [formData, setFormData] = useState<FormData>({
-    fullName: "",
+    fullname: "",
     email: "",
     password: "",
     confirmPassword: "",
@@ -53,6 +54,7 @@ export default function SignupPage() {
   const [errors, setErrors] = useState<FormErrors>({});
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+    const { signup } = useAuth();
 
   // Handle input change
   const handleOnChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -64,7 +66,7 @@ export default function SignupPage() {
   // Validate form
   const validateForm = (): FormErrors => {
     const newErrors: FormErrors = {};
-    if (!formData.fullName) newErrors.fullName = "Full name is required";
+    if (!formData.fullname) newErrors.fullname = "Full name is required";
     if (!formData.email) newErrors.email = "Please enter a valid email";
     else if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(formData.email))
       newErrors.email = "Enter a valid email address.";
@@ -93,9 +95,35 @@ export default function SignupPage() {
 
     setIsLoading(true);
 
+   
     try {
+      const { confirmPassword, ...signupPayload } = formData;
+
+      const response = await fetch('/api/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(signupPayload),
+      });
+
+      if (!response.ok) {
+        const responseText = await response.text();
+        let errorData: { error?: string } = {};
+
+        if (responseText) {
+          try {
+            errorData = JSON.parse(responseText);
+          } catch {
+            errorData = { error: responseText };
+          }
+        }
+
+        throw new Error(errorData.error || 'Signup failed');
+      }
+
       // Sign up user with Supabase
-      const { data, error } = await supabase.auth.signUp({
+     /*  const { data, error } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
         options: {
@@ -109,40 +137,43 @@ export default function SignupPage() {
       if (error) throw error;
 
       const user = data.user;
-      if (!user) throw new Error("Signup failed — no user returned");
+      if (!user) throw new Error("Signup failed — no user returned"); */
 
-     
+      const userData = {
+        email: formData.email,
+        fullname: formData.fullname,
+        role: formData.role,
+      };
       
-localStorage.setItem("pendingEmail", formData.email);
-     
+      localStorage.setItem('userData', JSON.stringify(userData));
+      localStorage.setItem("pendingEmail", formData.email);
+      localStorage.setItem('savedUserName', formData.fullname);
+
+      await signup(formData.email, formData.password, formData.fullname, formData.role); 
       // Show confirmation message
       toast.success(
         "Signup successful! Please check your email to confirm your account."
       );
 
       // Optional redirect after signup confirmation
-           setTimeout(() => {
-        router.push("/verify-email");
+      setTimeout(() => {
+        if(formData.role === "client") {
+          router.push("/dashboard/client");
+        } else {
+          router.push("/dashboard/photographer");
+        }
       }, 2000);
 
 
       // Reset form
       setFormData({
-        fullName: "",
+        fullname: "",
         email: "",
         password: "",
         confirmPassword: "",
         role: defaultRole,
       });
 
-      const userData = {
-        id: user.id,
-  email: user.email,
-  fullName: formData.fullName,
-  role: formData.role,
-      }
-
-      localStorage.setItem("userData", JSON.stringify(userData))
     } catch (error) {
       if (error instanceof Error) {
         console.group("🧩 Supabase Signup Error");
@@ -191,17 +222,17 @@ localStorage.setItem("pendingEmail", formData.email);
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Full Name */}
               <div className="space-y-2">
-                <Label htmlFor="fullName">Full Name</Label>
+                <Label htmlFor="fullname">Full Name</Label>
                 <Input
-                  id="fullName"
-                  name="fullName"
+                  id="fullname"
+                  name="fullname"
                   type="text"
                   placeholder="John Doe"
-                  value={formData.fullName}
+                  value={formData.fullname}
                   onChange={handleOnChange}
                 />
-                {errors.fullName && (
-                  <p className="text-sm text-red-500">{errors.fullName}</p>
+                {errors.fullname && (
+                  <p className="text-sm text-red-500">{errors.fullname}</p>
                 )}
               </div>
 

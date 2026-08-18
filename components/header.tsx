@@ -1,11 +1,10 @@
 "use client";
-import React, { useEffect, useState } from "react";
+
 import Link from "next/link";
 import Image from "next/image";
-import { Button } from "@/components/ui/button";
-import { supabase } from "@/lib/supabaseClient";
 import { useRouter, usePathname } from "next/navigation";
-
+import { useQueryClient } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,7 +12,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Camera,
   Menu,
@@ -25,7 +23,7 @@ import {
   PlusSquare,
   MessageSquare,
   Briefcase,
-  ArrowRight
+  ArrowRight,
 } from "lucide-react";
 import {
   Sheet,
@@ -35,158 +33,54 @@ import {
   SheetTrigger,
   SheetClose,
 } from "@/components/ui/sheet";
-import { useQuery } from "@tanstack/react-query";
-import { useQueryClient } from "@tanstack/react-query";
-import { Badge } from '@/components/ui/badge'
-import { useAuth } from '@/lib/auth-context'
-
-
-interface UserProfile {
-id?:string;
-  email: string;
-  full_name: string;
-  profile_image_url: string;
-  role?: string;
-}
-
-
-
+import { useAuth } from "@/lib/auth-context";
 
 export function Header() {
-  const { user: authUser } = useAuth();
+  const { user, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  const queryClient = useQueryClient();
 
   const isActiveLink = (href: string) => {
     return pathname === href || (href !== "/" && pathname.startsWith(href));
   };
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    await logout();
     queryClient.clear();
-    router.refresh();
     router.push("/login");
   };
 
-
-
-
-  const { data: profileData } = useQuery({
-    queryKey: ['profile', authUser?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('profile_image_url, email, full_name, role')
-        .eq('id', authUser?.id)
-        .single();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!authUser?.id,
-    staleTime: 1000 * 60 * 5, // 5 minutes cache
-  });
-
-  const queryClient = useQueryClient();
-
-  const currentRole = profileData?.role || authUser?.role || "guest";
-
-  const { data: applicationCount } = useQuery({
-    queryKey: ['applications-count', authUser?.id],
-    queryFn: async () => {
-      if (!authUser?.id) return 0;
-      const { count, error } = await supabase
-        .from('job_applications')
-        .select('*', { count: 'exact', head: true })
-        .eq('photographer_id', authUser?.id)
-        .eq('is_read', false);
-      if (error) throw error;
-      return count || 0;
-    },
-    enabled: !!authUser?.id && currentRole === 'photographer',
-  });
-
-  const {data: messagesCount} = useQuery({
-    queryKey:['messages-count', authUser?.id],
-    queryFn: async() =>{
-      if(!authUser?.id) return 0;
-      console.log('[Header] Fetching unread count for:', authUser.id);
-      const {count, error} = await supabase.from('messages').select('*', {count: 'exact', head: true}).eq('receiver_id', authUser?.id).eq('is_read', false)
-      if(error) throw error;
-      console.log('[Header] Unread count result:', count);
-      return count || 0;
-    },
-    enabled: !!authUser?.id,
-    refetchInterval: 30000,
-    staleTime: 0,
-  })
-
-  // Real-time subscriptions for immediate badge updates
-  useEffect(() => {
-    if (!authUser?.id) return;
-
-    const channel = supabase
-      .channel('header-notifications')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'messages',
-          filter: `receiver_id=eq.${authUser.id}`,
-        },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ['messages-count', authUser.id] });
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'job_applications',
-          filter: `photographer_id=eq.${authUser.id}`,
-        },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ['applications-count', authUser.id] });
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [authUser?.id, queryClient]);
+  const currentRole = user?.role || "guest";
+  const displayName = user?.fullname || user?.name || "User";
 
   const navLinks = [
-    { href: "/photographers", label: "Find Photographers", roles: ["client", "photographer", ], icon: Search },
+    { href: "/photographers", label: "Find Photographers", roles: ["client", "photographer"], icon: Search },
     { href: "/photographer/find-jobs", label: "Find Jobs", roles: ["photographer"], icon: Search },
     { href: "/dashboard/client/post-job", label: "Post a Job", roles: ["client"], icon: PlusSquare },
-    { href: "/how-it-works", label: "How It Works", roles: ["client", "photographer"], icon: Camera }, // Placeholder icon
+    { href: "/how-it-works", label: "How It Works", roles: ["client", "photographer"], icon: Camera },
     { href: "/dashboard/client", label: "Dashboard", roles: ["client"], icon: LayoutDashboard },
-    {href:"/dashboard/client/jobs", label:"Jobs", roles:["client"], icon:Briefcase},
+    { href: "/dashboard/client/jobs", label: "Jobs", roles: ["client"], icon: Briefcase },
     { href: "/dashboard", label: "Dashboard", roles: ["photographer"], icon: LayoutDashboard },
     { href: "/admin", label: "Admin", roles: ["admin"], icon: Shield },
-    {href:'/applications', label:'Applications', roles:["photographer"], icon:Briefcase},
-    {href:"/messages", label:"Messages", roles:["client", "photographer"], icon:MessageSquare}
+    { href: "/applications", label: "Applications", roles: ["photographer"], icon: Briefcase },
+    { href: "/messages", label: "Messages", roles: ["client", "photographer"], icon: MessageSquare },
   ];
-
-
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 py-2">
       <div className="container mx-auto flex h-16 items-center justify-between px-6">
         <Link href="/" className="flex items-center gap-2 shrink-0 transition-transform hover:scale-105">
-          <Image 
-            src="/logo.png" 
-            alt="LensConnect Logo" 
-            width={36} 
-            height={36} 
+          <Image
+            src="/logo.png"
+            alt="LensConnect Logo"
+            width={36}
+            height={36}
             className="h-9 w-9 object-contain"
           />
           <span className="text-2xl font-black tracking-tight uppercase">LensConnect</span>
         </Link>
 
-        {/* Desktop Navigation - Centered */}
         <nav className="hidden xl:flex absolute left-1/2 -translate-x-1/2 items-center gap-1 lg:gap-4 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           {navLinks.map((link) => {
             if (!link.roles.includes(currentRole)) return null;
@@ -195,56 +89,40 @@ export function Header() {
               <Link
                 key={link.href}
                 href={link.href}
-                className={`whitespace-nowrap none shrink-0 text-sm font-bold tracking-tight transition-all px-4 py-2 rounded-full ${
-                  active 
-                    ? "text-primary bg-primary/5" 
+                className={`whitespace-nowrap shrink-0 text-sm font-bold tracking-tight transition-all px-4 py-2 rounded-full ${
+                  active
+                    ? "text-primary bg-primary/5"
                     : "text-foreground/60 hover:text-foreground hover:bg-muted"
                 }`}
               >
                 {link.label}
-                {link.href === '/applications' && applicationCount != null && applicationCount > 0 && (
-                  <Badge className="ml-1 h-5 min-w-[20px] px-1.5 text-[10px] font-bold rounded-full bg-primary text-primary-foreground">
-                    {applicationCount}
-                  </Badge>
-                )}
-                {link.href === '/messages' && messagesCount != null && messagesCount > 0 && (
-                  <Badge className="ml-1 h-5 min-w-[20px] px-1.5 text-[10px] font-bold rounded-full bg-primary text-primary-foreground">
-                    {messagesCount}
-                  </Badge>
-                )}
               </Link>
-            )
+            );
           })}
-        </nav> 
+        </nav>
 
         <div className="flex items-center gap-4 shrink-0">
           <button className="hidden lg:flex p-2 hover:bg-muted rounded-full transition-colors">
             <Search className="h-5 w-5 text-foreground/60" />
           </button>
-          
-          {profileData ? (
+
+          {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
                   className="relative h-10 w-10 rounded-full ring-2 ring-transparent hover:ring-primary/20 transition-all"
                 >
-                  <Avatar className="h-10 w-10">
-                    <AvatarImage
-                      src={profileData.profile_image_url || "/placeholder.svg"}
-                      alt={profileData.full_name}
-                    />
-                    <AvatarFallback>{profileData.full_name?.charAt(0)}</AvatarFallback>
-                  </Avatar>
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
+                    {displayName.charAt(0).toUpperCase()}
+                  </div>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56 mt-2 rounded-2xl shadow-xl border-border/50">
                 <div className="flex items-center justify-start gap-2 p-3">
                   <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-bold">{profileData.full_name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {profileData.email}
-                    </p>
+                    <p className="text-sm font-bold">{displayName}</p>
+                    <p className="text-xs text-muted-foreground">{user.email}</p>
                   </div>
                 </div>
                 <DropdownMenuSeparator />
@@ -254,7 +132,7 @@ export function Header() {
                     Profile
                   </Link>
                 </DropdownMenuItem>
-                {profileData.role === "photographer" && (
+                {user.role === "photographer" && (
                   <DropdownMenuItem asChild className="rounded-lg m-1">
                     <Link href="/dashboard" className="cursor-pointer">
                       <LayoutDashboard className="mr-2 h-4 w-4" />
@@ -262,7 +140,7 @@ export function Header() {
                     </Link>
                   </DropdownMenuItem>
                 )}
-                {profileData.role === "client" && (
+                {user.role === "client" && (
                   <DropdownMenuItem asChild className="rounded-lg m-1">
                     <Link href="/dashboard/client" className="cursor-pointer">
                       <LayoutDashboard className="mr-2 h-4 w-4" />
@@ -270,7 +148,7 @@ export function Header() {
                     </Link>
                   </DropdownMenuItem>
                 )}
-                {profileData.role === "admin" && (
+                {user.role === "admin" && (
                   <DropdownMenuItem asChild className="rounded-lg m-1">
                     <Link href="/admin" className="cursor-pointer">
                       <Shield className="mr-2 h-4 w-4" />
@@ -293,15 +171,17 @@ export function Header() {
               <Button variant="ghost" asChild className="hidden md:inline-flex font-bold rounded-full">
                 <Link href="/login">Log in</Link>
               </Button>
-              <Button 
-                asChild 
+              <Button
+                asChild
                 className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 font-bold px-8 h-12 transition-all hover:scale-105 active:scale-95 shadow-lg shadow-primary/20"
               >
-                <Link href="/signup">Sign up <ArrowRight className="ml-2 h-4 w-4" /></Link>
+                <Link href="/signup">
+                  Sign up <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
               </Button>
             </>
           )}
-          {/* Mobile Navigation */}
+
           <Sheet>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" className="xl:hidden">
@@ -311,11 +191,11 @@ export function Header() {
             <SheetContent side="left">
               <SheetHeader>
                 <SheetTitle className="text-left flex items-center gap-2">
-                  <Image 
-                    src="/logo.png" 
-                    alt="LensConnect Logo" 
-                    width={24} 
-                    height={24} 
+                  <Image
+                    src="/logo.png"
+                    alt="LensConnect Logo"
+                    width={24}
+                    height={24}
                     className="h-6 w-6 object-contain"
                   />
                   LensConnect
@@ -337,36 +217,20 @@ export function Header() {
                       >
                         <link.icon className={`h-5 w-5 ${active ? "text-primary" : "text-muted-foreground"}`} />
                         {link.label}
-                        {link.href === '/applications' && applicationCount != null && applicationCount > 0 && (
-                          <Badge className="ml-auto h-5 min-w-[20px] px-1.5 text-[10px] font-bold rounded-full bg-primary text-primary-foreground">
-                            {applicationCount}
-                          </Badge>
-                        )}
-                        {link.href === '/messages' && messagesCount != null && messagesCount > 0 && (
-                          <Badge className="ml-auto h-5 min-w-[20px] px-1.5 text-[10px] font-bold rounded-full bg-primary text-primary-foreground">
-                            {messagesCount}
-                          </Badge>
-                        )}
                       </Link>
                     </SheetClose>
                   );
                 })}
-                {!profileData && (
+                {!user && (
                   <>
                     <div className="h-px bg-border my-2" />
                     <SheetClose asChild>
-                      <Link
-                        href="/login"
-                        className="flex items-center gap-2 text-base font-medium"
-                      >
+                      <Link href="/login" className="flex items-center gap-2 text-base font-medium">
                         Log in
                       </Link>
                     </SheetClose>
                     <SheetClose asChild>
-                      <Link
-                        href="/signup"
-                        className="flex items-center gap-2 text-base font-medium text-primary"
-                      >
+                      <Link href="/signup" className="flex items-center gap-2 text-base font-medium text-primary">
                         Sign up
                       </Link>
                     </SheetClose>

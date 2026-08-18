@@ -3,23 +3,22 @@
 import {
   createContext,
   useContext,
-  useState,
   useEffect,
+  useState,
   type ReactNode,
 } from "react";
-import { supabase } from "@/lib/supabaseClient";
-import type { User } from "./types";
+import type { User, UserRole } from "./types";
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<User>;
   signup: (
     email: string,
     password: string,
-    name: string,
+    fullname: string,
     role: "client" | "photographer"
   ) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   isLoading: boolean;
 }
 
@@ -29,117 +28,121 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-
-  const jobPostings = async () =>{
-    
-  }
-
   useEffect(() => {
-    // Check current session on mount
-    const initializeAuth = async () => {
-      try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
+    let isMounted = true;
 
-        if (session?.user) {
-          setUser({
-            id: session.user.id,
-            email: session.user.email || "",
-            name: session.user.user_metadata?.full_name || "User",
-            role: session.user.user_metadata?.role || "client",
-            createdAt: new Date(session.user.created_at),
-          });
+    async function getUser() {
+      try {
+        const response = await fetch("/api/me");
+
+        if (!response.ok) {
+          if (isMounted) {
+            setUser(null);
+          }
+          return;
+        }
+
+        const data = await response.json();
+
+        if (isMounted) {
+          setUser(
+            data.user
+              ? {
+                  id: String(data.user.id),
+                  email: data.user.email,
+                  name: data.user.fullname || data.user.name || "User",
+                  fullname: data.user.fullname || data.user.name || "User",
+                  role: (data.user.role as UserRole) || "client",
+                  createdAt: new Date(),
+                }
+              : null
+          );
         }
       } catch (error) {
-        console.error("Error initializing auth:", error);
+        console.error("Failed to load auth user:", error);
+        if (isMounted) {
+          setUser(null);
+        }
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
-    };
+    }
 
-    initializeAuth();
-
-    // Listen for auth state changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("Auth event:", event);
-
-      if (session?.user) {
-        setUser({
-          id: session.user.id,
-          email: session.user.email || "",
-          name: session.user.user_metadata?.full_name || "User",
-          role: session.user.user_metadata?.role || "client",
-          createdAt: new Date(session.user.created_at),
-        });
-      } else {
-        setUser(null);
-      }
-
-      setIsLoading(false);
-    });
+    getUser();
 
     return () => {
-      subscription.unsubscribe();
+      isMounted = false;
     };
   }, []);
 
   const login = async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
+    const response = await fetch("/api/login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email, password }),
     });
 
-    if (error) throw error;
+    const data = await response.json();
 
-    if (data.user) {
-      setUser({
-        id: data.user.id,
-        email: data.user.email || "",
-        name: data.user.user_metadata?.full_name || "User",
-        role: data.user.user_metadata?.role || "client",
-        createdAt: new Date(data.user.created_at),
-      });
+    if (!response.ok) {
+      throw new Error(data.error || "Login failed");
     }
+
+    const normalizedUser: User = {
+      id: String(data.user.id),
+      email: data.user.email || email,
+      name: data.user.fullname || data.user.name || "User",
+      fullname: data.user.fullname || data.user.name || "User",
+      role: (data.user.role as UserRole) || "client",
+      createdAt: new Date(),
+    };
+
+    setUser(normalizedUser);
+    return normalizedUser;
   };
 
   const signup = async (
     email: string,
     password: string,
-    name: string,
+    fullname: string,
     role: "client" | "photographer"
   ) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          full_name: name,
-          role: role,
-        },
+    const response = await fetch("/api/signup", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
       },
+      body: JSON.stringify({
+        email,
+        password,
+        fullname,
+        role,
+      }),
     });
 
-    if (error) throw error;
-
-    // Note: User won't be set until email is confirmed
-    // Supabase will handle the session after email confirmation
-    if (data.user && data.session) {
-      setUser({
-        id: data.user.id,
-        email: data.user.email || "",
-        name: name,
-        role: role,
-        createdAt: new Date(data.user.created_at),
-      });
+    if (!response.ok) {
+      throw new Error("Signup failed");
     }
   };
 
   const logout = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
+    try {
+      const response = await fetch("/api/logout", {
+        method: "POST",
+      });
+
+      if (!response.ok) {
+        throw new Error("Logout failed");
+      }
+
+      setUser(null);
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
   };
 
   return (

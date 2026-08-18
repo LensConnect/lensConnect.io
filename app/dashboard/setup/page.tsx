@@ -10,16 +10,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
 import { supabase } from "@/lib/supabaseClient"
 import { toast } from "sonner"
+import { useAuth } from "@/lib/auth-context"
 
 import { motion, AnimatePresence } from "framer-motion"
 import { Header } from "@/components/header"
 import { CheckCircle, Camera, Briefcase, User } from "lucide-react"
 
 interface FormData {
-  full_name: string
+  fullname: string
   bio: string
   location: string
-  phone: string
+  phoneNumber: string
   experience: number | string
   portfolio_url: string
   hourly_rate: number | string
@@ -31,10 +32,10 @@ interface FormData {
 }
 
 interface FormErrors {
-  full_name?: string
+  fullname?: string
   bio?: string
   location?: string
-  phone?: string
+  phoneNumber?: string
   experience?: string
   email?: string
   portfolio_url?: string
@@ -53,19 +54,19 @@ const availableSpecialties = [
   "Product",
 ]
 
-export default function PhotographerSetup() {
+export default function SetupPage() {
   const router = useRouter()
-
+  const { user } = useAuth()
 
   const [step, setStep] = useState(1)
   const [uploading, setUploading] = useState(false)
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [formData, setFormData] = useState<FormData>({
-    full_name: "",
+    fullname: "",
     bio: "",
     location: "",
     email: "",
-    phone: "",
+    phoneNumber: "",
     experience: "",
     portfolio_url: "",
     hourly_rate: "",
@@ -77,19 +78,34 @@ export default function PhotographerSetup() {
   })
   const [errors, setErrors] = useState<FormErrors>({})
 
-  // Prefill local user
+  // Prefill from auth session first, then fall back to localStorage
   useEffect(() => {
-    const storedUser = localStorage.getItem("userData")
-    if (storedUser) {
-      const localUser = JSON.parse(storedUser)
+    if (user) {
+      // Primary source: session cookie via useAuth
       setFormData((prev) => ({
         ...prev,
-        full_name: localUser.fullName || "",
-        email: localUser.email || "",
-        role: localUser.role || "",
+        fullname: user.fullname || user.name || prev.fullname,
+        email: user.email || prev.email,
+        role: user.role || prev.role,
       }))
+    } else {
+      // Fallback: localStorage saved during signup
+      const storedUser = localStorage.getItem("userData")
+      if (storedUser) {
+        try {
+          const localUser = JSON.parse(storedUser)
+          setFormData((prev) => ({
+            ...prev,
+            fullname: localUser.fullname || "",
+            email: localUser.email || "",
+            role: localUser.role || "",
+          }))
+        } catch {
+          console.error("Failed to parse stored user data")
+        }
+      }
     }
-  }, [])
+  }, [user])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -113,11 +129,11 @@ export default function PhotographerSetup() {
     const newErrors: FormErrors = {}
 
     if (step === 1) {
-      if (!formData.full_name) newErrors.full_name = "Full name is required"
+      if (!formData.fullname) newErrors.fullname = "Full name is required"
       if (!formData.email) newErrors.email = "Email is required"
       if (!formData.bio) newErrors.bio = "Bio is required"
       if (!formData.location) newErrors.location = "Location is required"
-      if (!formData.phone) newErrors.phone = "Phone number is required"
+      if (!formData.phoneNumber) newErrors.phoneNumber = "Phone number is required"
     } else if (step === 2) {
       if (!formData.experience) newErrors.experience = "Experience is required"
       if (!formData.portfolio_url) newErrors.portfolio_url = "Portfolio URL is required"
@@ -142,8 +158,7 @@ export default function PhotographerSetup() {
       return
     }
 
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
-    if (userError || !user) {
+    if (!user) {
       toast.error("You must be logged in to upload.")
       return
     }
@@ -181,39 +196,49 @@ export default function PhotographerSetup() {
     const isValid = validateStep()
     if (!isValid) return
 
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
-    if (userError || !user) {
-      toast.error("You must be logged in.")
+    if (!user) {
+      toast.error("You must be logged in to save setup.")
       return
     }
 
-    // Upsert into Unified 'profiles' table
-    const { error: profileError } = await supabase.from("profiles").insert({
-      id: user.id,
-      email: formData.email || user.email,
-      full_name: formData.full_name,
-      role: formData.role,
-      phone: formData.phone,
-      bio: formData.bio,
-      location: formData.location,
-      experience: Number(formData.experience),
-      hourly_rate: Number(formData.hourly_rate),
-      specialties: formData.specialties,
-      portfolio_url: formData.portfolio_url,
-      availability: formData.availability,
-      profile_image_url: formData.profile_image_url,
+    try {
+      const response = await fetch('/api/profiles', {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          userId: Number(user.id),
+          email: formData.email || user.email,
+          fullname: formData.fullname,
+          role: formData.role,
+          phoneNumber: formData.phoneNumber,
+          bio: formData.bio,
+          location: formData.location,
+          experience: Number(formData.experience),
+          hourlyRate: Number(formData.hourly_rate),
+          specialties: formData.specialties,
+          portfolio_url: formData.portfolio_url,
+          availability: formData.availability,
+          profile_image_url: formData.profile_image_url,
+          updatedAt: new Date(),
+        }),
+      })
 
-      updated_at: new Date().toISOString(),
-    })
+      if (!response.ok) {
+        // Replace line 229 with this to see the real error:
+const errorData = await response.json().catch(() => ({}));
+console.error("Server Response Error:", response.status, errorData);
+throw new Error(errorData.error || `Profile setup failed with status ${response.status}`);
 
-    if (profileError) {
-      console.error("Error saving profile:", profileError)
-      toast.error("Error saving profile: " + profileError.message)
-      return
+      }
+
+      toast.success("Profile setup completed!")
+      router.push("/dashboard")
+    } catch (error) {
+      console.error("Profile setup error:", error)
+      toast.error(error instanceof Error ? error.message : "Profile setup failed. Please try again.")
     }
-
-    toast.success("Profile setup completed!")
-    router.push("/dashboard")
   }
 
   const steps = [
@@ -283,12 +308,12 @@ export default function PhotographerSetup() {
                       <div>
                         <Label>Full Name</Label>
                         <Input
-                          name="full_name"
+                          name="fullname"
                           className="mt-2"
-                          value={formData.full_name}
+                          value={formData.fullname}
                           onChange={handleChange}
                         />
-                        {errors.full_name && <p className="text-red-500 mt-2 text-sm">{errors.full_name}</p>}
+                        {errors.fullname && <p className="text-red-500 mt-2 text-sm">{errors.fullname}</p>}
                       </div>
 
                       <div>
@@ -305,12 +330,13 @@ export default function PhotographerSetup() {
                       <div>
                         <Label>Phone</Label>
                         <Input
-                          name="phone"
+                          name="phoneNumber"
                           className="mt-2"
-                          value={formData.phone}
+                          value={formData.phoneNumber}
                           onChange={handleChange}
+                 
                         />
-                        {errors.phone && <p className="text-red-500 mt-2 text-sm">{errors.phone}</p>}
+                        {errors.phoneNumber && <p className="text-red-500 mt-2 text-sm">{errors.phoneNumber}</p>}
                       </div>
                     </div>
 

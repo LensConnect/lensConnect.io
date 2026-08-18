@@ -27,8 +27,10 @@ interface UserProfile {
   role: string;
 }
 
+import { useAuth } from "@/lib/auth-context";
+
 export default function HomePage() {
-  const [user, setUser] = useState<UserProfile | null>(null);
+  const { user } = useAuth();
   const router = useRouter();
   
   const [searchLocation, setSearchLocation] = useState("");
@@ -39,29 +41,6 @@ export default function HomePage() {
   const heroOpacity = useTransform(scrollY, [0, 400], [1, 0]);
   const heroScale = useTransform(scrollY, [0, 400], [1, 0.95]);
   const heroY = useTransform(scrollY, [0, 400], [0, 100]);
-
-  const handleContentRole = async () => {
-    const { data: { user: authUser }, error: userError } = await supabase.auth.getUser();
-
-    if (userError || !authUser) return;
-
-    const { data: profile, error: profileError } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", authUser.id)
-      .single();
-
-    if (profile) {
-      setUser({
-        role: profile.role,
-        id: authUser.id,
-      });
-    }
-  };
-
-  useEffect(() => {
-    handleContentRole();
-  }, []);
 
   const categories = [
     { name: "Editorial", count: "1,234", image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80" },

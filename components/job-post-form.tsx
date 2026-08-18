@@ -39,10 +39,11 @@ interface JobPosts{
   location:string;
   duration_hours:number;
   date: string;
-  budget:number;
+  totalPrice:number;
   category:string;
   description:string;
-  client_id:string;
+  clientId:string;
+  status: 'open' | 'filled' | 'completed' | 'cancelled';
 }
 
 const jobFormSchema = z.object({
@@ -52,7 +53,7 @@ const jobFormSchema = z.object({
   category: z.string({ message: "Please select a category." }),
   date: z.date({ message: "A date is required." }),
   duration_hours: z.coerce.number().min(1, { message: "Duration must be at least 1 hour." }),
-  budget: z.coerce.number().min(1, { message: "Budget must be at least $1." }),
+  totalPrice: z.coerce.number().min(1, { message: "Budget must be at least $1." }),
 })
 
 type JobFormValues = z.infer<typeof jobFormSchema>
@@ -60,12 +61,30 @@ type JobFormValues = z.infer<typeof jobFormSchema>
 export function JobPostForm() {
   const [loading, setLoading] = useState(false)
   const { user } = useAuth()
+  
 
  const createMutaions = useMutation({
   mutationFn: async (data: JobFormValues) =>{
     if (!user?.id) throw new Error("User not authenticated")
+
+      setLoading(true)
+
+      try{
+        const response = await fetch('/api/jobpost',{
+          method:'POST',
+
+          headers:{
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({...data, clientId: user.id})
+        })
+
+        if(!response.ok) throw Error
+      }catch{
+        console.error('Error inserting data')
+      }
     
-    const {data: job, error} = await supabase.from("jobs").insert({
+   /*  const {data: job, error} = await supabase.from("jobs").insert({
       title: data.title,
       description: data.description,
       location: data.location,
@@ -74,9 +93,9 @@ export function JobPostForm() {
       duration_hours: data.duration_hours,
       budget: data.budget,
       client_id: user.id,
-    })
-    if (error) throw error
-    return job
+    }) */
+   
+    return 
   },
   onSuccess: () =>{
     toast.success("Job posted successfully!")
@@ -96,7 +115,7 @@ export function JobPostForm() {
       description: "",
       location: "",
       duration_hours: 1,
-      budget: 0,
+      totalPrice: 0,
     },
   })
 
@@ -249,7 +268,7 @@ export function JobPostForm() {
 
           <FormField
             control={form.control}
-            name="budget"
+            name="totalPrice"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Budget ($)</FormLabel>

@@ -4,22 +4,55 @@ export interface User {
   id: string
   email: string
   name: string
+  fullname?: string
   role: UserRole
   avatar?: string
   createdAt: Date
+}
+
+export interface users {
+   id: string
+  email: string
+  fullname:string;
+  role:string;
+
+  
 }
 
 export interface PhotographerProfile {
   id: string
   userId: string
   bio: string
+  fullname:string;
   specialties: string[]
   location: string
   hourlyRate: number
   rating: number
-  reviewCount: number
-  portfolioImages: string[]
-  availability: boolean
+  reviewCount?: number
+  portfolioImages: string[];
+  profile_image_url:string;
+  availability: boolean;
+}
+
+export interface profiles{
+  id:string;
+  userId:string;
+  phoneNumber:string;
+  imageUrl:string;
+  bio:string;
+  website:string;
+  location:string;
+  updatedAt:string;
+}
+
+
+export interface  portfolio {
+  id:string;
+  image_url:string;
+  photographer_id:string;
+  title:string;
+  description:string;
+  display_order:string;
 }
 
 export interface Booking {
@@ -46,12 +79,12 @@ export interface Review {
 }
 
 export interface Message {
-  id: string
-  senderId: string
-  receiverId: string
-  content: string
-  createdAt: Date
-  read: boolean
+  id: string;
+  senderId: string;
+  receiverId: string;
+  content: string;
+  createdAt: Date;
+  read: boolean;
 }
 
 export interface Job {
@@ -63,7 +96,7 @@ export interface Job {
   category: string
   date: Date
   durationHours: number
-  budget: number
+  totalPrice: number
   status: "open" | "filled" | "cancelled" | "completed"
   createdAt: Date
 }

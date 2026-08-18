@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import { X } from "lucide-react"
-import { mockPhotographers } from "@/lib/mock-data"
+
 import Link from "next/link"
 
 const availableSpecialties = [

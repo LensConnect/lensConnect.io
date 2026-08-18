@@ -14,26 +14,16 @@ import Image from "next/image"
 import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
 import { useQuery } from "@tanstack/react-query"
+import { PhotographerProfile } from "@/lib/types"
 
-const specialties = ["Events", "Portraits", "Products", "Real Estate", "Fashion", "Family", "Weddings", "Commercial"]
+const specialties = ["Events", "Portraits", "Products", "Real Estate", "Fashion", "Family", "Weddings", "Commercial", 'Sports']
 
-interface Photographers {
-  id: string;
-  profile_image_url: string;
-  location: string;
-  hourly_rate: number;
-  specialties: string[];
-  bio: string;
-  full_name: string;
-  rating: number;
-  review_count: number;
-}
 
 export default function SearchPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [location, setLocation] = useState("")
   const [selectedSpecialties, setSelectedSpecialties] = useState<string[]>([])
-  const [priceRange, setPriceRange] = useState([0, 1000])
+  const [priceRange, setPriceRange] = useState([0, 5000])
   const [minRating, setMinRating] = useState("0")
   const [sortBy, setSortBy] = useState("rating")
   const [showFilters, setShowFilters] = useState(true)
@@ -45,33 +35,40 @@ export default function SearchPage() {
   }
 
   const [loading, setLoading] = useState(true)
-  const [photographers, setPhotographers] = useState<Photographers[]>([])
+  const [photographers, setPhotographers] = useState<PhotographerProfile[]>([])
 
   const fetchPhotographers = async () => {
     try {
       setLoading(true)
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("role", "photographer")
+      const response = await fetch("/api/get_photographer_profiles", {
+        method: "GET", headers:{
+          'Content-Type': 'application/json',
+        }
+      })
 
-      if (error) {
-        console.error("Error fetching photographers:", error)
+      const data = await response.json()
+
+      if (!response.ok) {
+        console.error("Error fetching photographers:", data.error)
         return
       }
 
       if (data) {
-        const mappedPhotographers = data.map((profile) => ({
-          id: profile.id,
-          profile_image_url: profile.profile_image_url,
-          location: profile.location || "",
-          hourly_rate: profile.hourly_rate || 0,
-          specialties: profile.specialties || [],
-          bio: profile.bio || "",
-          full_name: profile.full_name || "Unknown Photographer",
-          rating: profile.rating || 5.0,
-          review_count: profile.review_count || 0,
-        }))
+        console.log(data)
+          const mappedPhotographers = data.map((profile: any) => ({
+            id: profile.id,
+            userId: profile.userId,
+            profile_image_url: profile.profile_image_url,
+            location: profile.location || "",
+            hourlyRate: profile.hourlyRate || 0,
+            specialties: profile.specialties || [],
+            bio: profile.bio || "",
+            fullname: profile.fullname || "Unknown Photographer",
+            rating: profile.rating || 0,
+            reviewCount: profile.reviewCount || 0,
+            portfolioImages: profile.portfolio_image_url || [],
+            availability: profile.availability ?? true,
+          }))
         setPhotographers(mappedPhotographers)
       }
     } catch (error) {
@@ -87,35 +84,35 @@ export default function SearchPage() {
 
   const names = photographers.map((photo) =>(
     <div key={photo.id}>
-      {photo.full_name}
+      {photo.fullname}
     </div>
   ))
 
   const filteredPhotographers = useMemo(() => {
     const filtered = photographers.filter((photographer) => {
-      if (searchQuery && !photographer.full_name.toLowerCase().includes(searchQuery.toLowerCase())) return false
+      if (searchQuery && !photographer.fullname.toLowerCase().includes(searchQuery.toLowerCase())) return false
       if (location && !photographer.location.toLowerCase().includes(location.toLowerCase())) return false
       if (selectedSpecialties.length > 0) {
         const hasMatchingSpecialty = photographer.specialties.some((s) => selectedSpecialties.includes(s))
         if (!hasMatchingSpecialty) return false
       }
-      if (photographer.hourly_rate < priceRange[0] || photographer.hourly_rate > priceRange[1]) return false
-      if (photographer.rating < Number.parseFloat(minRating)) return false
+      if (photographer.hourlyRate < priceRange[0] || photographer.hourlyRate > priceRange[1]) return false
+      if ((photographer.rating || 0) < Number.parseFloat(minRating)) return false
       return true
     })
 
     filtered.sort((a, b) => {
       switch (sortBy) {
-        case "rating": return b.rating - a.rating
-        case "price-low": return a.hourly_rate - b.hourly_rate
-        case "price-high": return b.hourly_rate - a.hourly_rate
-        case "reviews": return b.review_count - a.review_count
+        case "rating": return (b.rating || 0) - (a.rating || 0)
+        case "price-low": return a.hourlyRate - b.hourlyRate
+        case "price-high": return b.hourlyRate - a.hourlyRate
         default: return 0
       }
     })
 
     return filtered
-  }, [photographers, searchQuery, location, selectedSpecialties, priceRange, minRating, sortBy])
+  }, [photographers, searchQuery, location, selectedSpecialties, priceRange, minRating, sortBy]) 
+
 
   return (
     <div className="min-h-screen flex flex-col bg-background selection:bg-accent selection:text-white">
@@ -269,7 +266,7 @@ export default function SearchPage() {
                 {filteredPhotographers.map((photographer) => (
                   <Link
                     key={photographer.id}
-                    href={`/photographer/${photographer.full_name}/${photographer.id}`}
+                    href={`/photographer/${photographer.fullname}/${photographer.id}`}
                     className="group block break-inside-avoid"
                   >
                     <div className="relative rounded-2xl overflow-hidden bg-secondary/20 hover:bg-secondary/40 transition-colors duration-500 border border-border/40">
@@ -278,14 +275,14 @@ export default function SearchPage() {
                         {photographer.profile_image_url ? (
                           <Image
                             src={photographer.profile_image_url}
-                            alt={photographer.full_name}
+                            alt={photographer.fullname}
                             fill
                             className="object-cover group-hover:scale-[1.03] origin-center transition-transform duration-700 ease-[cubic-bezier(0.25,1,0.5,1)]"
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center bg-secondary/80">
                             <span className="text-8xl font-light text-muted opacity-30">
-                              {photographer.full_name?.charAt(0) || "P"}
+                              {photographer.fullname.charAt(0) || "P"}
                             </span>
                           </div>
                         )}
@@ -305,7 +302,7 @@ export default function SearchPage() {
                         <div className="flex justify-between items-start gap-4 mb-3">
                           <div>
                             <h3 className="text-xl font-semibold tracking-tight group-hover:text-accent transition-colors">
-                              {photographer.full_name}
+                              {photographer.fullname}
                             </h3>
                             <p className="text-sm text-muted-foreground flex items-center gap-1.5 mt-1 font-medium">
                               <MapPin className="w-3.5 h-3.5" />
@@ -313,15 +310,15 @@ export default function SearchPage() {
                             </p>
                           </div>
                           <div className="flex flex-col items-end">
-                            <span className="text-xl font-bold tracking-tight">${photographer.hourly_rate}</span>
+                            <span className="text-xl font-bold tracking-tight">${photographer.hourlyRate}</span>
                             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">/hour</span>
                           </div>
                         </div>
 
                         <div className="flex items-center gap-1.5 mb-5 font-medium">
                           <Star className="h-4 w-4 fill-foreground text-foreground" />
-                          <span>{photographer.rating.toFixed(1)}</span>
-                          <span className="text-muted-foreground text-sm ml-1">· {photographer.review_count} reviews</span>
+                          <span>{(photographer.rating || 0).toFixed(1)}</span>
+                          <span className="text-muted-foreground text-sm ml-1">· {photographer.reviewCount || 0} reviews</span>
                         </div>
 
                         {photographer.specialties.length > 0 && (
@@ -360,4 +357,5 @@ export default function SearchPage() {
       </div>
     </div>
   )
+
 }

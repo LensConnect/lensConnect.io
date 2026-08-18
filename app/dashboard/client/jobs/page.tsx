@@ -19,7 +19,7 @@ interface job{
   category:string;
   date:Date;
   duration_hours:number;
-  budget:number;
+  totalPrice:number;
   client_id:string;
   description:string;
   created_at:Date;
@@ -31,17 +31,13 @@ const ClientJobsPage = () => {
   const { data: jobs, isLoading, error } = useQuery({
     queryKey: ["client-jobs", user?.id],
     queryFn: async () => {
-      if (!user?.id) return []
-      
-      const { data, error } = await supabase
-        .from("jobs")
-        .select("*")
-        .eq("client_id", user.id)
-        .order("created_at", { ascending: false })
+      const response = await fetch('/api/getClientJobs')
+      if (!response.ok) {
+        throw new Error("Failed to fetch jobs")
+      }
+      const data = await response.json()
 
-      if (error) throw new Error(error.message)
-
-      // Map snake_case to camelCase for the frontend Job type
+      // Map snake_case DB fields to camelCase Job type 
       return data.map((job: job) => ({
         id: job.id,
         clientId: job.client_id,
@@ -51,12 +47,12 @@ const ClientJobsPage = () => {
         category: job.category,
         date: new Date(job.date),
         durationHours: job.duration_hours,
-        budget: job.budget,
+        totalPrice: job.totalPrice,
         status: job.status,
         createdAt: new Date(job.created_at)
       })) as Job[]
     },
-    enabled: !!user?.id,
+    enabled: !!user?.id,   // only run once the user is known
   })
 
   return (

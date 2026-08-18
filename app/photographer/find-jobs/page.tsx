@@ -25,7 +25,7 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Card } from "@/components/ui/card"
 import {Header} from "@/components/header"
-
+import {useAuth} from '@/lib/auth-context'
 
 interface jobs{
   id:string;
@@ -35,7 +35,7 @@ interface jobs{
   category:string;
   date:Date;
   duration_hours:number;
-  budget:number;
+  totalPrice:number;
   client_id:string;
   description:string;
   created_at:Date;
@@ -44,12 +44,20 @@ interface jobs{
 export default function FindJobsPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [categoryFilter, setCategoryFilter] = useState("all")
+  const {user} = useAuth()
 
   const { data: dbJobs, isLoading } = useQuery({
     queryKey: ['jobs'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('jobs').select('*').order('created_at', { ascending: false })
-      if (error) throw error
+      const response = await fetch('/api/getJobs', {method: 'GET',
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${localStorage.getItem("token")}`
+        }
+      })
+
+      const data = await response.json()
+     
       
       return data.map((job:jobs) => ({
         id: job.id,
@@ -60,8 +68,8 @@ export default function FindJobsPage() {
         category: job.category,
         date: new Date(job.date),
         durationHours: job.duration_hours,
-        budget: job.budget,
         status: job.status,
+        totalPrice:job.totalPrice,
         createdAt: new Date(job.created_at)
       })) as Job[]
     }

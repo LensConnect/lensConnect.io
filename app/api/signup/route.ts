@@ -39,6 +39,9 @@ export async function POST(req: Request) {
     const normalizedFullname = String(fullname).trim();
     const normalizedEmail = String(email).trim().toLowerCase();
 
+    console.log("SIGNUP EMAIL RECEIVED:", email);
+console.log("NORMALIZED EMAIL:", normalizedEmail);
+
     // -----------------------------------------
     // 3. Validate values
     // -----------------------------------------
@@ -100,6 +103,8 @@ export async function POST(req: Request) {
         { status: 409 }
       );
     }
+
+    
 
     // -----------------------------------------
     // 5. Hash password

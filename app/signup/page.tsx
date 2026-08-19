@@ -149,7 +149,7 @@ export default function SignupPage() {
       localStorage.setItem("pendingEmail", formData.email);
       localStorage.setItem('savedUserName', formData.fullname);
 
-      await signup(formData.email, formData.password, formData.fullname, formData.role); 
+      
       // Show confirmation message
       toast.success(
         "Signup successful! Please check your email to confirm your account."

@@ -2,8 +2,14 @@
 import { cookies } from "next/headers";
 import { SignJWT, jwtVerify } from "jose";
 
-const JWT_SECRET = process.env.JWT_SECRET! as string;
+const JWT_SECRET = process.env.JWT_SECRET;
+
+if (!JWT_SECRET) {
+  throw new Error("JWT_SECRET is not configured");
+}
+
 const encodedKey = new TextEncoder().encode(JWT_SECRET);
+
 
 export interface SessionPayload {
   id: string;

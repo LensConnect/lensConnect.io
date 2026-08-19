@@ -2,13 +2,15 @@ import { eq } from "drizzle-orm";
 import { db } from "@/app/src";
 import { users } from "@/app/src/db/schema";
 import { NextResponse } from "next/server";
-import { createSessionCookie } from "@/lib/auth";
+import { createSessionCookie } from "@/lib/auth"
+import bcrypt from 'bcryptjs'
 export async function POST(req: Request) {
   try {
     const body = await req.json();
 
     const { fullname, email, password, role  } = body;
 
+    const passwordHash = await bcrypt.hash(password, 12);
     if (!fullname || !email || !password) {
       return NextResponse.json(
         { error: "Full name, email, and password are required" },
@@ -39,7 +41,8 @@ export async function POST(req: Request) {
     const [newUser] = await db.insert(users).values({
       fullname: fullname,
       email,
-      role
+      role,
+      passwordHash,
     }).$returningId();
 
     const [createdUser] = await db

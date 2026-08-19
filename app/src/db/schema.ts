@@ -5,8 +5,8 @@ export const users = mysqlTable('users', {
   id: int().primaryKey().autoincrement(),
   fullname: varchar({ length: 255 }).notNull(),
   email: varchar({ length: 255 }).notNull().unique(),
-  role: mysqlEnum("role",["client", "photographer"]).notNull(), 
-  passwordHash: varchar("password_hash",{length: 255}).notNull(),
+  role: mysqlEnum("role",["client", "photographer"]).notNull(),
+  passwordHash: varchar("password_hash",{length: 255}),
 });
 
 

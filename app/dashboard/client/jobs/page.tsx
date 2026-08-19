@@ -73,7 +73,7 @@ const ClientJobsPage = () => {
               Manage your photography listings, view applications, and track progress all in one place.
             </p>
           </div>
-          <Link href="/dashboard/post-job">
+          <Link href="/dashboard/client/post-job">
             <Button className="h-14 px-8 rounded-2xl font-black text-sm uppercase tracking-widest shadow-2xl shadow-primary/20 hover:scale-105 transition-all">
               <Plus className="mr-2 h-5 w-5" />
               Post a New Job
@@ -109,7 +109,7 @@ const ClientJobsPage = () => {
                 <h3 className="text-2xl font-black tracking-tight">No jobs posted yet</h3>
                 <p className="text-muted-foreground font-medium">Capture the moment - start by creating your first photography job listing.</p>
               </div>
-              <Link href="/dashboard/post-job">
+              <Link href="/dashboard/client/post-job">
                 <Button variant="outline" className="h-12 px-8 rounded-xl font-bold border-2">
                   Create Your First Post
                 </Button>

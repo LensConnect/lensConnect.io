@@ -99,7 +99,10 @@ export default function SignupPage() {
     try {
       const { confirmPassword, ...signupPayload } = formData;
 
-      const response = await fetch('/api/signup', {
+      await signup(formData.fullname, formData.email, formData.password, formData.role)
+      JSON.stringify(signupPayload)
+
+      /* const response = await fetch('/api/signup', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -119,25 +122,10 @@ export default function SignupPage() {
           }
         }
 
-        throw new Error(errorData.error || 'Signup failed');
-      }
+        throw new Error(errorData.error || 'Signup failed'); 
+      }*/
 
-      // Sign up user with Supabase
-     /*  const { data, error } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: {
-          data: {
-            full_name: formData.fullName,
-            role: formData.role,
-          },
-        },
-      });
-
-      if (error) throw error;
-
-      const user = data.user;
-      if (!user) throw new Error("Signup failed — no user returned"); */
+      
 
       const userData = {
         email: formData.email,

@@ -99,7 +99,12 @@ export default function SignupPage() {
     try {
       const { confirmPassword, ...signupPayload } = formData;
 
-      await signup(formData.fullname, formData.email, formData.password, formData.role)
+     await signup(
+  formData.email,
+  formData.password,
+  formData.fullname,
+  formData.role
+);
       JSON.stringify(signupPayload)
 
       /* const response = await fetch('/api/signup', {
@@ -148,7 +153,7 @@ export default function SignupPage() {
         if(formData.role === "client") {
           router.push("/dashboard/client");
         } else {
-          router.push("/dashboard/photographer");
+          router.push("/dashboard/setup");
         }
       }, 2000);
 

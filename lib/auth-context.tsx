@@ -50,8 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               ? {
                   id: String(data.user.id),
                   email: data.user.email,
-                  name: data.user.fullname || data.user.name || "User",
-                  fullname: data.user.fullname || data.user.name || "User",
+                  fullname: data.user.fullname  || "User",
                   role: (data.user.role as UserRole) || "client",
                   createdAt: new Date(),
                 }
@@ -95,7 +94,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const normalizedUser: User = {
       id: String(data.user.id),
       email: data.user.email || email,
-      name: data.user.fullname || data.user.name || "User",
       fullname: data.user.fullname || data.user.name || "User",
       role: (data.user.role as UserRole) || "client",
       createdAt: new Date(),

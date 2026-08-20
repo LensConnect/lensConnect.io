@@ -678,7 +678,9 @@ export default function ProfilePage() {
                                     </Label>
 
                                     <Input
-                                        disabled
+                              
+                                        name="email"
+                                                  disabled
                                         value={profile.email || ""}
                                         className="bg-secondary/20 h-12 rounded-xl text-muted-foreground cursor-not-allowed border-transparent"
                                     />

@@ -3,7 +3,6 @@ export type UserRole = "client" | "photographer" | "admin"
 export interface User {
   id: string
   email: string
-  name: string
   fullname?: string
   role: UserRole
   avatar?: string

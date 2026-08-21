@@ -112,7 +112,7 @@ export default function PhotographerDashboardPage() {
         <div className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-border/50 pb-8">
           <div className="space-y-2">
             <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-foreground">Overview</h1>
-            <p className="text-lg text-muted-foreground font-normal">Welcome back, <span className="text-foreground font-medium">{user.name}</span></p>
+            <p className="text-lg text-muted-foreground font-normal">Welcome back, <span className="text-foreground font-medium">{user.fullname}</span></p>
           </div>
           <div className="flex gap-3">
             <Button variant="outline" asChild className="rounded-full h-12 px-6 bg-secondary/30 border-none hover:bg-secondary/50">

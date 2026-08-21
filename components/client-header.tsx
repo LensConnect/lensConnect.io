@@ -108,7 +108,7 @@ export function Header() {
                   <Avatar className="h-9 w-9">
                     <AvatarImage
                       src={user.avatar || "/placeholder.svg"}
-                      alt={user.name}
+                      alt={user.fullname}
                     />
                     <AvatarFallback></AvatarFallback>
                   </Avatar>
@@ -117,7 +117,7 @@ export function Header() {
               <DropdownMenuContent align="end" className="w-56">
                 <div className="flex items-center justify-start gap-2 p-2">
                   <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium">{user.name}</p>
+                    <p className="text-sm font-medium">{user.fullname}</p>
                     <p className="text-xs text-muted-foreground">
                       {user.email}
                     </p>

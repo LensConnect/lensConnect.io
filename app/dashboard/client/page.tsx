@@ -105,7 +105,7 @@ export default function ClientDashboardPage() {
         <div className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-border/50 pb-8">
           <div className="space-y-2">
             <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-foreground">Client Portal</h1>
-            <p className="text-lg text-muted-foreground font-normal">Welcome back, <span className="text-foreground font-medium">{user.name}</span></p>
+            <p className="text-lg text-muted-foreground font-normal">Welcome back, <span className="text-foreground font-medium">{user.fullname}</span></p>
           </div>
           <div className="flex flex-wrap gap-3">
             <Button asChild className="rounded-full h-12 px-6 bg-foreground text-background font-semibold hover:bg-foreground/90">

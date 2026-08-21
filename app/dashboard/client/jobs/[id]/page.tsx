@@ -177,8 +177,7 @@ const { data: applications, isLoading: isLoadingApps } = useQuery({
                     created_at: app.created_at,
                     photographer: {
                       id: app.profiles?.id,
-                      full_name: app.profiles?.full_name || "Unknown Photographer",
-                      name: app.profiles?.full_name || "Unknown Photographer",
+                      fullname: app.profiles?.fullname || "Unknown Photographer",
                       avatar: app.profiles?.profile_image_url,
                       location: app.profiles?.location,
                       bio: app.profiles?.bio || "",

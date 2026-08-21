@@ -12,7 +12,7 @@ interface PhotographerCardProps {
 export function PhotographerCard({ photographer }: PhotographerCardProps) {
   return (
     <Link
-      href={`/photographer/${photographer.user.name}/${photographer.userId}`}
+      href={`/photographer/${photographer.user.fullname}/${photographer.userId}`}
       className="group block break-inside-avoid h-full"
     >
       <div className="relative rounded-[2rem] overflow-hidden bg-secondary/20 hover:bg-secondary/40 transition-all duration-500 border border-border/40 h-full flex flex-col shadow-sm hover:shadow-2xl hover:-translate-y-1">
@@ -22,14 +22,14 @@ export function PhotographerCard({ photographer }: PhotographerCardProps) {
           {photographer.portfolioImages?.[0] ? (
             <Image
               src={photographer.portfolioImages[0]}
-              alt={photographer.user.name}
+              alt={"Portfolio image"}
               fill
               className="object-cover group-hover:scale-[1.05] origin-center transition-transform duration-700 ease-[cubic-bezier(0.25,1,0.5,1)]"
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-secondary/80">
               <span className="text-8xl font-light text-muted opacity-30">
-                {photographer.user.name?.charAt(0) || "P"}
+                {photographer.user.fullname?.charAt(0) || "P"}
               </span>
             </div>
           )}
@@ -59,7 +59,7 @@ export function PhotographerCard({ photographer }: PhotographerCardProps) {
           <div className="flex justify-between items-start gap-4 mb-4">
             <div className="flex-1 min-w-0">
               <h3 className="text-xl font-black tracking-tight group-hover:text-primary transition-colors truncate">
-                {photographer.user.name}
+                {photographer.user.fullname}
               </h3>
               <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-1 font-bold uppercase tracking-wider">
                 <MapPin className="w-3.5 h-3.5 text-primary" />

@@ -16,7 +16,7 @@ export function PhotographerCard({ photographer }: PhotographerCardProps) {
         <div className="relative h-48 overflow-hidden">
           <img
             src={photographer.portfolioImages[0] || "/placeholder.svg"}
-            alt={photographer.user.name}
+            alt={photographer.user.fullname || photographer.fullname || ""}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           />
           {!photographer.availability && (
@@ -30,11 +30,11 @@ export function PhotographerCard({ photographer }: PhotographerCardProps) {
         <CardContent className="p-4 space-y-3">
           <div className="flex items-start gap-3">
             <Avatar className="h-12 w-12">
-              <AvatarImage src={photographer.user.avatar || "/placeholder.svg"} alt={photographer.user.name} />
-              <AvatarFallback>{photographer.user.name.charAt(0)}</AvatarFallback>
+              <AvatarImage src={photographer.user.avatar || "/placeholder.svg"} alt={photographer.user.fullname || photographer.fullname || ""} />
+              <AvatarFallback>{(photographer.user.fullname || photographer.fullname || "?")?.charAt(0)}</AvatarFallback>
             </Avatar>
             <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-lg truncate">{photographer.user.name}</h3>
+              <h3 className="font-semibold text-lg truncate">{photographer.user.fullname || photographer.fullname}</h3>
               <div className="flex items-center gap-1 text-sm text-muted-foreground">
                 <MapPin className="h-3 w-3" />
                 <span className="truncate">{photographer.location}</span>

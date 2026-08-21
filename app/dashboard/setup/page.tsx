@@ -84,7 +84,7 @@ export default function SetupPage() {
       // Primary source: session cookie via useAuth
       setFormData((prev) => ({
         ...prev,
-        fullname: user.fullname || user.name || prev.fullname,
+        fullname: user.fullname || prev.fullname,
         email: user.email || prev.email,
         role: user.role || prev.role,
       }))

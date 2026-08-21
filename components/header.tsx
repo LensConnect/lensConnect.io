@@ -52,7 +52,7 @@ export function Header() {
   };
 
   const currentRole = user?.role || "guest";
-  const displayName = user?.fullname || user?.name || "User";
+  const displayName = user?.fullname || "User";
 
   const navLinks = [
     { href: "/photographers", label: "Find Photographers", roles: ["client", "photographer"], icon: Search },

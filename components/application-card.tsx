@@ -21,10 +21,9 @@ interface ApplicationCardProps {
     created_at: Date | string
     photographer: {
       id: string;
-      full_name: string;
+      fullname: string;
       hourly_rate: number;
        specialties: string[];
-      name: string
       avatar?: string
        bio: string;
       location?: string
@@ -79,23 +78,23 @@ const router = useRouter()
             {/* Left Column: Photographer Info */}
             <div className="flex flex-row lg:flex-col items-start gap-4 lg:w-48 shrink-0">
               <Link 
-                href={`/photographer/${application.photographer.full_name}/${application.photographer.id}`}
+                href={`/photographer/${application.photographer.fullname}/${application.photographer.id}`}
                 className="relative block hover:scale-105 transition-transform duration-300"
               >
                 <Avatar className="h-16 w-16 lg:h-20 lg:w-20 border-2 border-primary/20 p-1 bg-background">
-                  <AvatarImage src={application.photographer.avatar} alt={application.photographer.name} />
-                  <AvatarFallback className="font-black text-xl">{application.photographer.name.charAt(0)}</AvatarFallback>
+                  <AvatarImage src={application.photographer.avatar} alt={application.photographer.fullname} />
+                  <AvatarFallback className="font-black text-xl">{application.photographer.fullname.charAt(0)}</AvatarFallback>
                 </Avatar>
                 <div className="absolute -bottom-1 -right-1 bg-green-500 w-4 h-4 rounded-full border-2 border-background ring-2 ring-transparent group-hover:ring-green-500/20 transition-all" />
               </Link>
               
               <div className="flex-1 space-y-1">
                 <Link 
-                  href={`/photographer/${application.photographer.full_name}/${application.photographer.id}`}
+                  href={`/photographer/${application.photographer.fullname}/${application.photographer.id}`}
                   className="block group/name"
                 >
                   <h3 className="font-black text-lg tracking-tight group-hover/name:text-primary transition-colors leading-tight">
-                    {application.photographer.name}
+                    {application.photographer.fullname}
                   </h3>
                 </Link>
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-bold uppercase tracking-wider">
@@ -215,7 +214,7 @@ const router = useRouter()
           
         </CardContent>
         <CardFooter className="w-[300px] mx-auto">
-          <Button onClick={() => router.push(`/photographer/${application.photographer.full_name}/${application.photographer.id}`)} className="rounded-xl w-full mx-auto cursor-pointer font-black uppercase tracking-widest text-[10px] h-12 flex-1 lg:w-40 bg-primary hover:bg-primary/90 text-primary-foreground shadow-xl shadow-primary/20">View Profile</Button>
+          <Button onClick={() => router.push(`/photographer/${application.photographer.fullname}/${application.photographer.id}`)} className="rounded-xl w-full mx-auto cursor-pointer font-black uppercase tracking-widest text-[10px] h-12 flex-1 lg:w-40 bg-primary hover:bg-primary/90 text-primary-foreground shadow-xl shadow-primary/20">View Profile</Button>
         </CardFooter>
       </Card>
     </motion.div>

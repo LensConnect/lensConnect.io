@@ -99,15 +99,15 @@ export default function SignupPage() {
     try {
       const { confirmPassword, ...signupPayload } = formData;
 
-     await signup(
+   /*   await signup(
   formData.email,
   formData.password,
   formData.fullname,
   formData.role
 );
-      JSON.stringify(signupPayload)
+      JSON.stringify(signupPayload) */
 
-      /* const response = await fetch('/api/signup', {
+      const response = await fetch('/api/signup', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -128,7 +128,7 @@ export default function SignupPage() {
         }
 
         throw new Error(errorData.error || 'Signup failed'); 
-      }*/
+      }
 
       
 

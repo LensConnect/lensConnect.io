@@ -11,8 +11,9 @@ import { useAuth } from '@/lib/auth-context'
 import { useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import type { Job } from '@/lib/types'
+import { JobApplication } from '@/lib/types'
 
-interface JobApplicationWithJob {
+/* interface JobApplicationWithJob {
   id: string;
   job_id: string;
   photographer_id: string;
@@ -22,7 +23,7 @@ interface JobApplicationWithJob {
   created_at: string;
   jobs: Job;
 }
-
+ */
 const ApplicationsPage = () => {
     const { user } = useAuth()
     
@@ -38,7 +39,7 @@ const ApplicationsPage = () => {
                 .order('created_at', { ascending: false })
             
             if (error) throw error
-            return data as JobApplicationWithJob[]
+            return data as JobApplication[]
         },
         enabled: !!user?.id
     })
@@ -132,10 +133,10 @@ const ApplicationsPage = () => {
                                         </div>
                                         <div className="flex items-center gap-2 font-medium">
                                             <span className="text-primary font-extrabold border bg-muted/30 px-1.5 rounded text-xs py-0.5">Your Bid</span>
-                                            <span className="font-semibold text-foreground">₦{app.bid_amount}</span>
+                                            <span className="font-semibold text-foreground">₦{app.bidAmount}</span>
                                         </div>
                                         <div className="flex items-center gap-2 text-muted-foreground text-xs justify-end">
-                                            Sent {format(new Date(app.created_at), "MMM d")}
+                                            Sent {format(new Date(app.createdAt), "MMM d")}
                                         </div>
                                     </div>
                                     <div className="space-y-1.5">

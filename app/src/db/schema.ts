@@ -63,6 +63,17 @@ export const portfolio = mysqlTable("portfolio",{
   image_url: varchar({length: 255})
 })
 
+export const job_applications = mysqlTable('job_applications',{
+  id: int().primaryKey().autoincrement(),
+  jobId: int().notNull(),
+  photographerId: int().notNull(),
+  message: varchar({length: 255}).notNull(),
+  bidAmount: int(),
+  createdAt: timestamp('created_at').defaultNow().notNull(), 
+  status:mysqlEnum("status",["pending", "accepted", "rejected"]).notNull(),
+  isRead: boolean().default(false),
+})
+
 
 export const userRelations = relations(users, ({one}) =>({
 photographer_profiles: one(photographer_profiles,{

@@ -102,11 +102,12 @@ export interface Job {
 
 export interface JobApplication {
   id: string;
-  job_id: string;
-  photographer_id: string;
+  jobId: string;
+  photographerId: string;
   message: string;
-  bid_amount?: number;
+  bidAmount: number;
   status: "pending" | "accepted" | "rejected";
-  is_read: boolean;
-  created_at: Date;
+  isRead: boolean;
+  createdAt: Date;
+  jobs:Job;
 }

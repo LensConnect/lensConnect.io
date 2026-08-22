@@ -13,8 +13,10 @@ import { Label } from "@/components/ui/label"
 import { supabase } from "@/lib/supabaseClient"
 import { useAuth } from "@/lib/auth-context"
 import { toast } from "sonner"
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, useMutation } from "@tanstack/react-query"
 import { useRouter } from "next/navigation"
+import { JobApplication } from "@/lib/types"
+
 
 interface JobCardProps {
   job: Job
@@ -22,15 +24,8 @@ interface JobCardProps {
   isOwner?: boolean
 }
 
-interface JobApplication {
-  id: string;
-  job_id: string;
-  photographer_id: string;
-  message: string;
-  bid_amount: number;
-  status: "pending" | "accepted" | "rejected";
-  created_at: Date;
-}
+
+
 
 export function JobCard({ job, onApply, isOwner = false }: JobCardProps) {
   const { user } = useAuth()
@@ -39,6 +34,8 @@ export function JobCard({ job, onApply, isOwner = false }: JobCardProps) {
   const [bidAmount, setBidAmount] = useState<number | "">(job.totalPrice)
   const [applied, setApplied] = useState(false)
   const router = useRouter()
+
+  const bidAmountNumber = Number(bidAmount)
 
   // Fetch application count for owners
   const { data: applicationCount = 0 } = useQuery({
@@ -57,7 +54,7 @@ export function JobCard({ job, onApply, isOwner = false }: JobCardProps) {
 
 
 
-  const { data: userApplication } = useQuery({
+  /* const { data: userApplication } = useQuery({
     queryKey: ["job-application", job.id, user?.id],
     queryFn: async () => {
      
@@ -76,7 +73,7 @@ export function JobCard({ job, onApply, isOwner = false }: JobCardProps) {
       return data 
     },
     enabled: !!user?.id && !isOwner
-  })
+  }) */
 
   const handleOpenModal = () => {
     setMessage("")
@@ -84,32 +81,39 @@ export function JobCard({ job, onApply, isOwner = false }: JobCardProps) {
     setOpenModal(true)
   }
 
-  const handleConfirmApply = async () => {
-    if (!user) {
-      toast.error("You must be logged in to apply.") 
-      return
-    }
 
-    const { error } = await supabase.from("job_applications").insert({
-      job_id: job.id,
-      photographer_id: user.id,
-      message: message,
-      bid_amount: Number(bidAmount),
-    })
-    
-    if (error) {
-      if (error.code === '23505') {
-        toast.error("You have already applied for this job.")
-        setApplied(true)
-      } else {
-        toast.error("Failed to send application!")
-      }
-    } else {
-      toast.success("Application sent successfully!")
+  const createMutation = useMutation({
+      mutationKey: ["job-application", job.id, user?.id],
+      mutationFn:async(data:{message:string,bidAmount:number,jobId:string})=>{
+       try{
+        const response = await fetch('/api/applyJobs', {method:'POST', headers:{"Content-Type":"application/json"},body:JSON.stringify({...data, userId:user?.id})})
+        const response_data = await response.json()
+        return response_data
+
+       } 
+       catch(error:any){
+        if(error.status == 400){
+          toast.error("You have already applied for this job.")
+           setApplied(true)
+        }
+        else if(error.status == 500){
+          toast.error("Failed to send application!")
+        }
+        else{
+          toast.success("Application sent successfully!")
       setApplied(true)
       setOpenModal(false)
-    }
+        }
+       }
+      }
+    })
+
+  const handleConfirmApply = async () => {
+createMutation.mutate({message:message,bidAmount:bidAmountNumber,jobId:job.id})
+   
   }
+
+  
 
   const isNew = new Date().getTime() - new Date(job.createdAt).getTime() < 24 * 60 * 60 * 1000
 

@@ -1,1 +1,0 @@
-ALTER TABLE `jobpost` DROP COLUMN `notes`;

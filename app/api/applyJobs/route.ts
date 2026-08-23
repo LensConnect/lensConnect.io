@@ -4,7 +4,7 @@ import { sql } from "drizzle-orm";
 import {cookies} from "next/headers"
 import { verifyToken, SessionPayload } from "@/lib/auth";
 
-export const POST = async(req: NextRequest,res:NextResponse) =>{
+export const POST = async(req: NextRequest,) =>{
     const body = await req.json();
     const {jobId,message,bidAmount} = body;
 
@@ -53,4 +53,4 @@ export const POST = async(req: NextRequest,res:NextResponse) =>{
         console.error('Error applying for job', error)
         return NextResponse.json({error: 'Failed to apply for job'}, {status: 500})
     }
-}
+}

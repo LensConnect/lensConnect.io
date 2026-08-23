@@ -35,6 +35,8 @@ export function JobCard({ job, onApply, isOwner = false }: JobCardProps) {
   const [applied, setApplied] = useState(false)
   const router = useRouter()
 
+  const [apiError, setApiError] = useState<string | null>(null)
+
   const bidAmountNumber = Number(bidAmount)
 
   // Fetch application count for owners
@@ -82,31 +84,45 @@ export function JobCard({ job, onApply, isOwner = false }: JobCardProps) {
   }
 
 
-  const createMutation = useMutation({
-      mutationKey: ["job-application", job.id, user?.id],
-      mutationFn:async(data:{message:string,bidAmount:number,jobId:string})=>{
-       try{
-        const response = await fetch('/api/applyJobs', {method:'POST', headers:{"Content-Type":"application/json"},body:JSON.stringify({...data, userId:user?.id})})
-        const response_data = await response.json()
-        return response_data
+ const createMutation = useMutation({
+  mutationKey: ["job-application", job.id, user?.id],
+  
+  // 1. Keep the mutationFn strictly for performing the network request
+  mutationFn: async (data: { message: string; bidAmount: number; jobId: string }) => {
+    const response = await fetch('/api/applyJobs', {
+      method: 'POST', 
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...data, userId: user?.id })
+    });
 
-       } 
-       catch(error:any){
-        if(error.status == 400){
-          toast.error("You have already applied for this job.")
-           setApplied(true)
-        }
-        else if(error.status == 500){
-          toast.error("Failed to send application!")
-        }
-        else{
-          toast.success("Application sent successfully!")
-      setApplied(true)
-      setOpenModal(false)
-        }
-       }
-      }
-    })
+    const responseData = await response.json();
+
+    if (!response.ok) {
+      // Pass the specific error string or structure to the throw statement
+      throw new Error(responseData.error || 'An unexpected error occurred');
+    }
+
+    return responseData;
+  },
+
+  // 2. Handle successful application logic here
+  onSuccess: (data: any) => {
+    toast.success("Application sent successfully!");
+    setApplied(true);
+  },
+
+  // 3. Handle server errors here
+  onError: (error: Error) => {
+    // Matches the exact custom string sent by your API route
+    if (error.message === "You have already applied for this job") {
+      toast.error("You have already applied for this job.");
+      setApplied(true);
+    } else {
+      toast.error(error.message || "Failed to send application!");
+    }
+  }
+});
+
 
   const handleConfirmApply = async () => {
 createMutation.mutate({message:message,bidAmount:bidAmountNumber,jobId:job.id})
@@ -242,6 +258,29 @@ createMutation.mutate({message:message,bidAmount:bidAmountNumber,jobId:job.id})
           </div>
           
           <div className="p-8 space-y-6">
+            {/* Status Messages */}
+            {applied && !createMutation.isError && (
+              <div className="p-4 border rounded-xl bg-emerald-50 border-emerald-200 flex flex-col gap-1">
+                <div className="flex items-center gap-2 font-semibold text-emerald-800">
+                  ✅ Application Submitted!
+                </div>
+                <p className="text-sm text-emerald-700">
+                  Your application was sent successfully. The client has been notified.
+                </p>
+              </div>
+            )}
+            
+            {createMutation.isError && (
+              <div className="p-4 border rounded-xl bg-rose-50 border-rose-200 flex flex-col gap-1">
+                <div className="flex items-center gap-2 font-semibold text-rose-800">
+                  ⚠️ Submission Failed
+                </div>
+                <p className="text-sm text-rose-700">
+                  {createMutation.error.message}
+                </p>
+              </div>
+            )}
+
             <div className="grid grid-cols-2 gap-4">
               <div className="p-4 rounded-2xl bg-secondary/50 border border-border/30">
                 <span className="text-[10px] font-black uppercase text-muted-foreground block mb-1">Budget</span>
@@ -284,8 +323,21 @@ createMutation.mutate({message:message,bidAmount:bidAmountNumber,jobId:job.id})
               <DialogClose asChild>
                 <Button variant="outline" className="w-full rounded-xl font-bold h-12 border-border/50">Cancel</Button>
               </DialogClose>
-              <Button onClick={handleConfirmApply} className="w-full rounded-xl font-bold h-12 bg-primary hover:bg-primary/90 text-primary-foreground shadow-xl shadow-primary/20">
-                Send Application
+              <Button onClick={handleConfirmApply} disabled={createMutation.isPending || applied} className="w-full rounded-xl font-bold h-12 bg-primary hover:bg-primary/90 text-primary-foreground shadow-xl shadow-primary/20">
+                {createMutation.isPending ? (
+        <span className="flex items-center justify-center gap-2">
+          {/* Simple loading spinner asset */}
+          <svg className="animate-spin h-5 w-5 text-gray-500" viewBox="0 0 24 24" fill="none">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+          </svg>
+          Sending...
+        </span>
+      ) : applied ? (
+        "Already Applied"
+      ) : (
+        "Confirm Application"
+      )}
               </Button>
             </DialogFooter>
           </div>

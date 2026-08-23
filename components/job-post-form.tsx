@@ -79,7 +79,11 @@ export function JobPostForm() {
           body: JSON.stringify({...data, clientId: user.id})
         })
 
-        if(!response.ok) throw Error
+        if(!response.ok) {
+          const errorPayload = await response.json();
+
+          throw new Error(errorPayload.error || 'An unexpexted error occured')
+        }
       }catch{
         console.error('Error inserting data')
       }

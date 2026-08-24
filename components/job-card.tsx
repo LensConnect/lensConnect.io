@@ -113,7 +113,7 @@ export function JobCard({ job, onApply, isOwner = false }: JobCardProps) {
       setOpenModal(false);
     toast.success("Application sent successfully!");
      setApplied(true);
-    },2000)
+    },10000)
   },
 
   // 3. Handle server errors here
@@ -124,7 +124,7 @@ export function JobCard({ job, onApply, isOwner = false }: JobCardProps) {
         setOpenModal(false);
         toast.error("You have already applied for this job.");
         setApplied(true);
-      },2000)
+      },10000)
     } else {
       toast.error(error.message || "Failed to send application!");
     }

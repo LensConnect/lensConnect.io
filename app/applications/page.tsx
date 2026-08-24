@@ -1,5 +1,5 @@
 'use client'
-import React from 'react'
+import React, {useState} from 'react'
 import { Header } from '@/components/header'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabaseClient'
@@ -27,24 +27,30 @@ import { JobApplication } from '@/lib/types'
 const ApplicationsPage = () => {
     const { user } = useAuth()
     
-    const { data: applications, isLoading } = useQuery({
+    const { data: applications = [], isLoading, error: queryError } = useQuery<JobApplication[]>({
         queryKey: ["job-applications", user?.id],
         queryFn: async () => {
             if (!user?.id) return []
             
-            const { data, error } = await supabase
-                .from("job_applications")
-                .select("*, jobs(*)")
-                .eq("photographer_id", user.id)
-                .order('created_at', { ascending: false })
-            
-            if (error) throw error
-            return data as JobApplication[]
+            const response = await fetch('/api/applyJobs', {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' }
+            })
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}))
+                const errorMessage = errorData.error || errorData.message || "Failed to fetch applications"
+                throw new Error(errorMessage)
+            }
+
+            const data = await response.json()
+            return Array.isArray(data) ? data : []
         },
         enabled: !!user?.id
     })
 
     const queryClient = useQueryClient()
+    const applicationList = Array.isArray(applications) ? applications : []
 
     useEffect(() => {
         const markAsRead = async () => {
@@ -61,10 +67,10 @@ const ApplicationsPage = () => {
             }
         }
 
-        if (applications && applications.length > 0) {
+        if (applicationList.length > 0) {
             markAsRead()
         }
-    }, [applications, user?.id, queryClient])
+    }, [applicationList, user?.id, queryClient])
 
     const getStatusStyle = (status: string) => {
       switch (status) {
@@ -95,7 +101,13 @@ const ApplicationsPage = () => {
                     <div className="flex justify-center items-center py-20">
                         <Loader2 className="h-8 w-8 animate-spin text-primary" />
                     </div>
-                ) : applications?.length === 0 ? (
+                ) : queryError ? (
+                    <div className="text-center py-20 bg-destructive/10 rounded-xl border border-destructive/20 p-6">
+                        <XCircle className="h-10 w-10 mx-auto text-destructive mb-4" />
+                        <h3 className="text-lg font-medium text-destructive">Failed to load applications</h3>
+                        <p className="text-sm text-muted-foreground mt-1">{(queryError as Error).message || "An unexpected error occurred."}</p>
+                    </div>
+                ) : applicationList.length === 0 ? (
                     <div className="text-center py-20 bg-muted/30 rounded-xl border border-dashed">
                         <Briefcase className="h-10 w-10 mx-auto text-muted-foreground mb-4 opacity-50" />
                         <h3 className="text-lg font-medium text-foreground">No applications yet</h3>
@@ -103,7 +115,7 @@ const ApplicationsPage = () => {
                     </div>
                 ) : (
                     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                        {applications?.map((app) => (
+                        {applicationList.map((app) => (
                             <Card key={app.id} className="flex flex-col overflow-hidden transition-all hover:shadow-md">
                                 <CardHeader className="pb-3 border-b bg-muted/10">
                                     <div className="flex justify-between items-start gap-4">
@@ -136,7 +148,7 @@ const ApplicationsPage = () => {
                                             <span className="font-semibold text-foreground">₦{app.bidAmount}</span>
                                         </div>
                                         <div className="flex items-center gap-2 text-muted-foreground text-xs justify-end">
-                                            Sent {format(new Date(app.createdAt), "MMM d")}
+                                            {app.created_at ? `Sent ${format(new Date(app.created_at), "MMM d")}` : 'Sent recently'}
                                         </div>
                                     </div>
                                     <div className="space-y-1.5">

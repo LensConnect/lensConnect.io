@@ -108,6 +108,6 @@ export interface JobApplication {
   bidAmount: number;
   status: "pending" | "accepted" | "rejected";
   isRead: boolean;
-  createdAt: Date;
+  created_at: Date;
   jobs:Job;
 }

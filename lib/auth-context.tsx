@@ -85,8 +85,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       body: JSON.stringify({ email, password }),
     });
 
-    const data = await response.json();
+    
+const contentType = response.headers.get("content-type");if (!contentType || !contentType.includes("application/json")) {const textError = await response.text();console.error("Server returned non-JSON response:", textError);throw new Error("Server configuration error. Expected JSON, got HTML.");}
 
+const data = await response.json();
     if (!response.ok) {
       throw new Error(data.error || "Login failed");
     }

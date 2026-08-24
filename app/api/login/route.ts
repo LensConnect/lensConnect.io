@@ -60,5 +60,5 @@ export async function POST(req: Request) {
 
 // Optional GET for quick health‑check
 export async function GET() {
-  return NextResponse.json({ msg: "Login endpoint – POST to authenticate" });
+  return NextResponse.json({ msg: "Login endpoint  –  POST to authenticate" });
 }

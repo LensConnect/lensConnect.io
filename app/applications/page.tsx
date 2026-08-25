@@ -52,7 +52,40 @@ const ApplicationsPage = () => {
     const queryClient = useQueryClient()
     const applicationList = Array.isArray(applications) ? applications : []
 
-    useEffect(() => {
+
+
+
+     async function fetchUnread(){
+
+        if (!user?.id) return [];
+
+          const response = await fetch('/api/read_applications', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ isRead: true }),
+            })
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}))
+                const errorMessage = errorData.error || errorData.message || "Failed to mark applications as read"
+                throw new Error(errorMessage)
+            }
+
+            const data = await response.json()
+            return data
+    }
+
+
+
+    useEffect(()=>{
+
+        if (applicationList.length > 0) {
+            fetchUnread()
+        }
+
+    },[user?.id])
+
+    /* useEffect(() => {
         const markAsRead = async () => {
             if (!user?.id) return
 
@@ -70,19 +103,19 @@ const ApplicationsPage = () => {
             }
 
             
-          /*   const { error } = await supabase
+         const { error } = await supabase
                 .from('job_applications')
                 .update({ is_read: true })
                 .eq('photographer_id', user.id)
                 .eq('is_read', false)
-             */
+             
             
         }
 
         if (applicationList.length > 0) {
             markAsRead()
         }
-    }, [applicationList, user?.id, queryClient])
+    }, [applicationList, user?.id, queryClient]) */
 
     const getStatusStyle = (status: string) => {
       switch (status) {

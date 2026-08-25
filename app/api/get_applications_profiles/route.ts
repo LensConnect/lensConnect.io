@@ -56,7 +56,7 @@ export async function GET(req: NextRequest) {
 }
 
 
-export async  function PUT(req:NextRequest){
+export async  function PATCH(req:NextRequest){
 
     const body = await req.json();
     const {status} = body;
@@ -71,15 +71,20 @@ export async  function PUT(req:NextRequest){
         
 
         
+if (!jobId) {
+            return NextResponse.json({ error: 'Missing jobId parameter' }, { status: 400 });
+        }
+        if (!status) {
+            return NextResponse.json({ error: 'Missing status value in request body' }, { status: 400 });
+        }
 
-
-     const [row] =    await db.execute(sql`
+       await db.execute(sql`
   UPDATE job_applications 
   SET status = ${status || ''}
   WHERE jobId = ${jobId || ''}
 `);
 
-      return NextResponse.json({message: 'Updated successfully',status:200 , success:true, rows:row})
+      return NextResponse.json({message: 'Updated successfully',status:200 , success:true})
     } catch (error) {
         console.error('Error updating application', error)
         return NextResponse.json({ error: 'Failed to update application' }, { status: 500 })

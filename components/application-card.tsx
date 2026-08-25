@@ -55,7 +55,7 @@ export function ApplicationCard({ application }: ApplicationCardProps) {
 
   async function updateJobStatus() {
 
-    const response = await fetch('http://localhost:3000/api/get_applications_profiles', {method:'PATCH', headers:{'Content-Type': 'application/json'},body:JSON.stringify({jobId:application.id,status:'accepted'}),})
+    const response = await fetch(`http://localhost:3000/api/get_applications_profiles?jobId=${application.id}`, {method:'PATCH', headers:{'Content-Type': 'application/json'},body:JSON.stringify({status:'accepted'}),})
 
     if(!response.ok){
       throw new Error('Failed to update job status')

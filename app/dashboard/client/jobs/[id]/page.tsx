@@ -8,12 +8,12 @@ import { useAuth } from '@/lib/auth-context'
 import { ApplicationCard } from '@/components/application-card'
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { 
-  ArrowLeft, 
-  MapPin, 
-  Calendar, 
-  DollarSign, 
-  Users, 
+import {
+  ArrowLeft,
+  MapPin,
+  Calendar,
+  DollarSign,
+  Users,
   Briefcase,
   Loader2,
   ChevronRight
@@ -34,45 +34,48 @@ const JobManagementPage = ({ params }: { params: Promise<{ id: string }> }) => {
         .select('*')
         .eq('id', id)
         .single()
-      
+
       if (error) throw error
       return data
     }
   })
 
-const { data: applications, isLoading: isLoadingApps } = useQuery({
-  queryKey: ['job-applications', id],
-  queryFn: async () => {
-    const { data, error } = await supabase
-      .from('job_applications')
-      .select(`
-        *,
-        profiles:photographer_id (
-          id,
-          full_name,
-          profile_image_url,
-          location,
-          bio,
-          hourly_rate,
-          specialties
-        ),
-        photographer_rating_summary (
-          rating,
-          review_count
-        )
-      `)
-      .eq('job_id', id);
+  const { data: applications, isLoading: isLoadingApps } = useQuery({
+    queryKey: ["applications", id],
+    queryFn: async () => {
+      /*  const { data, error } = await supabase
+         .from('job_applications')
+         .select(`
+           *,
+           profiles:photographer_id (
+             id,
+             full_name,
+             profile_image_url,
+             location,
+             bio,
+             hourly_rate,
+             specialties
+           ),
+           photographer_rating_summary (
+             rating,
+             review_count
+           )
+         `)
+         .eq('job_id', id);
+    */
 
-    if (error) throw error;
-    return data;
-  }
-});
+      const response = await fetch(`http://localhost:3000/api/get_applications_profiles?jobId=${id}`, { method: "GET", headers: { "Content-Type": "application/json" }, cache: "no-store" });
+      if (!response.ok) throw new Error("")
+      const data = await response.json();
+      return data || [];
+    }
+  });
   const isLoading = isLoadingJob || isLoadingApps
 
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      
+
       <main className="container mx-auto px-4 py-8 max-w-6xl">
         {/* Breadcrumbs / Navigation */}
         <div className="flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-muted-foreground mb-8">
@@ -92,7 +95,7 @@ const { data: applications, isLoading: isLoadingApps } = useQuery({
             <div className="absolute top-0 right-0 p-12 opacity-5">
               <Briefcase className="h-64 w-64 rotate-12" />
             </div>
-            
+
             <div className="relative z-10 space-y-6">
               <div className="flex flex-wrap gap-3">
                 <Badge variant="secondary" className="px-4 py-1 text-[10px] font-black uppercase tracking-widest bg-primary/10 text-primary border-primary/20">
@@ -167,26 +170,27 @@ const { data: applications, isLoading: isLoadingApps } = useQuery({
           ) : applications && applications.length > 0 ? (
             <div className="space-y-6">
               {applications.map((app: any) => (
-                <ApplicationCard 
-                  key={app.id} 
+                <ApplicationCard
+                  key={app.application_id}
                   application={{
-                    id: app.id,
+                    id: app.application_id,
+            
                     message: app.message,
-                    bid_amount: app.bid_amount,
+                    bidAmount: app.bidAmount,
                     status: app.status,
+             
                     created_at: app.created_at,
                     photographer: {
-                      id: app.profiles?.id,
-                      fullname: app.profiles?.fullname || "Unknown Photographer",
-                      avatar: app.profiles?.profile_image_url,
-                      location: app.profiles?.location,
-                      bio: app.profiles?.bio || "",
-                      hourly_rate: app.profiles?.hourly_rate || 0,
-                      specialties: app.profiles?.specialties || [],
-                      rating: app.photographer_rating_summary?.rating || 5.0,
-                      review_count: app.photographer_rating_summary?.review_count || 0
+                      id: app.profileId,
+                      fullname: app.fullname || "Unknown Photographer",
+
+                      location: app.location,
+                      bio: app.bio || "",
+                      hourlyRate: app.hourlyRate || 0,
+                      specialties: app.specialties || [],
+
                     }
-                  }} 
+                  }}
                 />
               ))}
             </div>

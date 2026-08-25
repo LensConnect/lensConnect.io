@@ -13,6 +13,8 @@ export async function GET(req: NextRequest) {
 
 
     try {
+
+       
         const [job_applications_table_rows] = await db.execute(sql`
   SELECT 
     -- Columns from job_applications
@@ -65,13 +67,19 @@ export async  function PUT(req:NextRequest){
 
 
     try {
-        const [job_applications_table_rows] = await db.execute(sql`
+
+        
+
+        
+
+
+     const [row] =    await db.execute(sql`
   UPDATE job_applications 
   SET status = ${status || ''}
   WHERE jobId = ${jobId || ''}
 `);
 
-        return NextResponse.json(job_applications_table_rows || [])
+      return NextResponse.json({message: 'Updated successfully',status:200 , success:true, rows:row})
     } catch (error) {
         console.error('Error updating application', error)
         return NextResponse.json({ error: 'Failed to update application' }, { status: 500 })

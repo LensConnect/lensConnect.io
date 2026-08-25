@@ -54,20 +54,26 @@ export function ApplicationCard({ application }: ApplicationCardProps) {
   const router = useRouter()
 
   async function updateJobStatus() {
-    const { data, error } = await supabase
-      .from("job_applications")
-      .update({ status: "accepted" })
-      .eq("id", application.id)
-    if (error) throw new Error(error.message)
+
+    const response = await fetch('http://localhost:3000/api/get_applications_profiles', {method:'PATCH', headers:{'Content-Type': 'application/json'},body:JSON.stringify({jobId:application.id,status:'accepted'}),})
+
+    if(!response.ok){
+      throw new Error('Failed to update job status')
+    }
+
+    const data = await response.json()
+    router.refresh()
     return data
+
   }
 
   async function updateJobStatusRejected() {
-    const { data, error } = await supabase
-      .from("job_applications")
-      .update({ status: "rejected" })
-      .eq("id", application.id)
-    if (error) throw new Error(error.message)
+    const response = await fetch('http://localhost:3000/api/get_applications_profiles', {method:'PATCH', headers:{'Content-Type': 'application/json'},body:JSON.stringify({jobId:application.id,status:'rejected'}),})
+
+    if(!response.ok) throw  Error
+
+    const data = await response.json()
+    router.refresh()
     return data
   }
 

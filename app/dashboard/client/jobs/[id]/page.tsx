@@ -64,7 +64,7 @@ const JobManagementPage = ({ params }: { params: Promise<{ id: string }> }) => {
          .eq('job_id', id);
     */
 
-      const response = await fetch(`http://localhost:3000/api/get_applications_profiles?jobId=${id}`, { method: "GET", headers: { "Content-Type": "application/json" }, cache: "no-store" });
+      const response = await fetch(`/api/get_applications_profiles?jobId=${id}`, { method: "GET", headers: { "Content-Type": "application/json" }, cache: "no-store" });
       if (!response.ok) throw new Error("")
       const data = await response.json();
       return data || [];

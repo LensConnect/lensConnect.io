@@ -55,16 +55,28 @@ const ApplicationsPage = () => {
     useEffect(() => {
         const markAsRead = async () => {
             if (!user?.id) return
+
+
+            const response = await fetch('/api/read_applications', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ isRead: true }),
+            })
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}))
+                const errorMessage = errorData.error || errorData.message || "Failed to mark applications as read"
+                throw new Error(errorMessage)
+            }
+
             
-            const { error } = await supabase
+          /*   const { error } = await supabase
                 .from('job_applications')
                 .update({ is_read: true })
                 .eq('photographer_id', user.id)
                 .eq('is_read', false)
+             */
             
-            if (!error) {
-                queryClient.invalidateQueries({ queryKey: ['applications-count', user.id] })
-            }
         }
 
         if (applicationList.length > 0) {

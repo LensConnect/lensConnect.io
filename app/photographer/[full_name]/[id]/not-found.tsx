@@ -8,7 +8,7 @@ export default function NotFound() {
       <Header />
       <div className="flex-1 flex items-center justify-center px-4">
         <div className="text-center space-y-4">
-          <h1 className="text-4xl font-bold">Photographer Not Found</h1>
+          <h1 className="text-4xl font-bold">No Photograper with this id found</h1>
           <p className="text-muted-foreground">The photographer you&apos;re looking for doesn&apos;t exist.</p>
           <Button asChild>
             <Link href="/photographers">Browse Photographers</Link>

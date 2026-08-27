@@ -20,19 +20,20 @@ import { motion } from "framer-motion"
 
 interface Profile {
   id: string;
-  full_name: string;
+  fullname: string;
   email: string;
   role: string;
+  imageUrl?: string;
+  phoneNumber: string;
+  portfolio_image_url?: string[];
   profile_image_url?: string;
-  phone?: string;
-  location?: string;
-  bio?: string;
+  location: string;
+  bio: string;
   experience?: number;
-  hourly_rate?: number;
+  hourlyRate?: number;
   specialties?: string[];
-  availability: boolean;
+  availability?: boolean;
   rating?: number;
-  review_count?: number;
 }
 
 interface PortfolioItem {
@@ -47,7 +48,7 @@ interface PortfolioItem {
 interface FormData {
   booking_date: string;
   booking_time: string;
-  duration: string;
+  durationHours: number;
   shoot_type: string;
   location: string;
   message: string;
@@ -56,7 +57,7 @@ interface FormData {
 interface formErrors {
   booking_date?: string;
   booking_time?: string;
-  duration?: string;
+  durationHours?: string;
   shoot_type?: string;
   location?: string;
   message?: string;
@@ -91,7 +92,7 @@ export default function PhotographerProfilePage({ params }: { params: Promise<{ 
   const [formData, setFormData] = useState<FormData>({
     booking_date: "",
     booking_time: "",
-    duration: "1",
+    durationHours: 1,
     shoot_type: "",
     location: "",
     message: ""
@@ -101,7 +102,7 @@ export default function PhotographerProfilePage({ params }: { params: Promise<{ 
     const errors: formErrors = {}
     if (!formData.booking_date) errors.booking_date = "Booking date is required"
     if (!formData.booking_time) errors.booking_time = "Booking time is required"
-    if (!formData.duration) errors.duration = "Duration is required"
+    if (!formData.durationHours) errors.durationHours = "Duration is required"
     if (!formData.shoot_type) errors.shoot_type = "Shoot type is required"
     if (!formData.location) errors.location = "Location is required"
     if (!formData.message) errors.message = "Message is required"
@@ -114,7 +115,7 @@ export default function PhotographerProfilePage({ params }: { params: Promise<{ 
         setLoading(true)
 
         // Fetch photographer profile
-        const { data: profileData, error: profileError } = await supabase
+        /* const { data: profileData, error: profileError } = await supabase
           .from("profiles")
           .select("*")
           .eq("id", id)
@@ -125,6 +126,15 @@ export default function PhotographerProfilePage({ params }: { params: Promise<{ 
           return
         }
 
+
+        
+ */
+
+        const response = await fetch(`/api/get_photographersId?id=${id}` ,{method:'GET',headers:{'Content-Type':'application/json'}});
+        const data = await response.json()
+        if(data.success){
+          setProfile(data.data[0])
+        } 
         // Fetch photographer portfolio
         const { data: portfolioData } = await supabase
           .from("photographer_portfolio")
@@ -136,7 +146,7 @@ export default function PhotographerProfilePage({ params }: { params: Promise<{ 
         }
 
         // Fetch photographer reviews
-        const { data: reviewsData } = await supabase
+      /*   const { data: reviewsData } = await supabase
           .from("reviews")
           .select("*, profiles:client_id(full_name, profile_image_url)")
           .eq("photographer_id", id)
@@ -151,7 +161,7 @@ export default function PhotographerProfilePage({ params }: { params: Promise<{ 
           setProfile({ ...profileData, rating: avgRating, review_count: count })
         } else {
           setProfile(profileData)
-        }
+        } */
       } catch (err) {
         console.error("Error fetching data:", err)
         setError(true)
@@ -197,8 +207,8 @@ export default function PhotographerProfilePage({ params }: { params: Promise<{ 
 
     try {
       const startTime = new Date(`${formData.booking_date}T${formData.booking_time}`).toISOString();
-      const durationHours = parseFloat(formData.duration);
-      const totalPrice = (profile.hourly_rate || 0) * durationHours;
+      const durationHours = formData.durationHours;
+      const totalPrice = (profile.hourlyRate || 0) * durationHours;
 
       const { error: bookingError } = await supabase
         .from("bookings")
@@ -206,7 +216,7 @@ export default function PhotographerProfilePage({ params }: { params: Promise<{ 
           photographer_id: id,
           client_id: userData.user.id,
           start_time: startTime,
-          duration_hours: durationHours,
+          durationHours: durationHours,
           shoot_type: formData.shoot_type,
           location: formData.location,
           total_price: totalPrice,
@@ -216,7 +226,7 @@ export default function PhotographerProfilePage({ params }: { params: Promise<{ 
       if (!bookingError) {
         toast.success("Booking request sent successfully!")
         setIsBookingOpen(false)
-        setFormData({ booking_date: "", booking_time: "", duration: "1", shoot_type: "", location: "", message: "" })
+        setFormData({ booking_date: "", booking_time: "", durationHours: 1, shoot_type: "", location: "", message: "" })
       } else {
         toast.error("Failed to send booking request.", { description: bookingError.message })
       }
@@ -252,7 +262,7 @@ export default function PhotographerProfilePage({ params }: { params: Promise<{ 
         <img 
           src={coverImage} 
           alt="Cover" 
-          className="absolute inset-0 w-full h-full object-cover brightness-[0.6] scale-100 transition-transform duration-1000 ease-out" 
+          className="absolute -pb-60 inset-0 w-full h-full object-cover brightness-[0.6] scale-100 transition-transform duration-1000 ease-out" 
         />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
         
@@ -261,14 +271,14 @@ export default function PhotographerProfilePage({ params }: { params: Promise<{ 
           <div className="container mx-auto px-4 md:px-8 max-w-7xl flex flex-col md:flex-row items-center md:items-end gap-6 md:gap-8">
             <Avatar className="w-32 h-32 md:w-48 md:h-48 border-4 border-background shadow-2xl relative z-20">
               <AvatarImage src={profile.profile_image_url || "/placeholder.svg"} className="object-cover" />
-              <AvatarFallback className="text-4xl bg-secondary">{profile.full_name?.charAt(0)}</AvatarFallback>
+              <AvatarFallback className="text-4xl bg-secondary">{profile.fullname?.charAt(0)}</AvatarFallback>
             </Avatar>
             <div className="pb-8 md:pb-16 relative z-20 text-center md:text-left">
-              <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-2 text-foreground break-words">{profile.full_name}</h1>
+              <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-2 text-foreground break-words">{profile.fullname}</h1>
               <div className="flex flex-col md:flex-row items-center gap-4 text-muted-foreground font-medium text-lg">
                 <span className="flex items-center gap-1.5"><MapPin className="w-4 h-4" />{profile.location || "Worldwide"}</span>
                 <span className="hidden md:inline text-border">•</span>
-                <span className="flex items-center gap-1.5 text-accent"><Star className="w-4 h-4 fill-accent" />{profile.rating?.toFixed(1)} ({profile.review_count} reviews)</span>
+               
               </div>
             </div>
           </div>
@@ -360,7 +370,7 @@ export default function PhotographerProfilePage({ params }: { params: Promise<{ 
               <div className="p-8 lg:p-10 rounded-[2rem] bg-secondary/40 border border-border/50 backdrop-blur-3xl shadow-2xl">
                 <div className="mb-8">
                   <div className="flex items-baseline gap-2 mb-2">
-                    <span className="text-4xl font-bold tracking-tight">₦{profile.hourly_rate || 0}</span>
+                    <span className="text-4xl font-bold tracking-tight">₦{profile.hourlyRate || 0}</span>
                     <span className="text-sm font-semibold text-muted-foreground uppercase tracking-widest">/ Hour</span>
                   </div>
                   {profile.availability ? (
@@ -412,7 +422,7 @@ export default function PhotographerProfilePage({ params }: { params: Promise<{ 
             <DialogHeader className="mb-8">
               <DialogTitle className="text-3xl font-bold tracking-tight">Commission Request</DialogTitle>
               <DialogDescription className="text-base mt-2">
-                Submit project details for evaluation by <span className="font-semibold">{profile.full_name}</span>.
+                Submit project details for evaluation by <span className="font-semibold">{profile.fullname}</span>.
               </DialogDescription>
             </DialogHeader>
 
@@ -432,8 +442,8 @@ export default function PhotographerProfilePage({ params }: { params: Promise<{ 
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 <div className="space-y-2.5">
-                  <Label htmlFor="duration" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Duration</Label>
-                  <Select value={formData.duration} onValueChange={(val) => handleSelectChange('duration', val)}>
+                  <Label htmlFor="durationHours" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Duration</Label>
+                  <Select value={formData.durationHours.toString()} onValueChange={(val) => handleSelectChange('durationHours', val)}>
                     <SelectTrigger className="h-12 rounded-xl bg-secondary/50 border-transparent focus:ring-accent">
                       <SelectValue placeholder="Select duration" />
                     </SelectTrigger>

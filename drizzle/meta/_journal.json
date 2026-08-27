@@ -8,6 +8,13 @@
       "when": 1787377886622,
       "tag": "0000_little_madrox",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1787791081767,
+      "tag": "0001_handy_thanos",
+      "breakpoints": true
     }
   ]
 }

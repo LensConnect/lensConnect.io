@@ -54,6 +54,20 @@ export const photographer_profiles = mysqlTable("photographer_profiles", {
 });
 
 
+export const booking = mysqlTable("booking",{
+  id: int().primaryKey().autoincrement(),
+  clientId: int().notNull().references(() => users.id, { onDelete: "cascade" }),
+  photographerId: int().notNull().references(() => photographer_profiles.id, { onDelete: "cascade" }),
+  date: date().notNull(),
+  durationHours: int().notNull(),
+  location: varchar({ length: 255 }).notNull(),
+  type: varchar({ length: 255 }).notNull(),
+  status: mysqlEnum("status",["pending", "confirmed", "completed", "cancelled"]).notNull(),
+  totalPrice: int().notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+})
+
+
 
 export const portfolio = mysqlTable("portfolio",{
   id: int().primaryKey().autoincrement(),

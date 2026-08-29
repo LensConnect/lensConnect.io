@@ -17,6 +17,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { motion } from "framer-motion"
+import { useAuth } from "@/lib/auth-context"
+
 
 interface Profile {
   id: string;
@@ -46,19 +48,19 @@ interface PortfolioItem {
 }
 
 interface FormData {
-  booking_date: string;
-  booking_time: string;
+ startDate:string;
+ startTime:string;
   durationHours: number;
-  shoot_type: string;
+  type: string;
   location: string;
   message: string;
 }
 
 interface formErrors {
-  booking_date?: string;
-  booking_time?: string;
+  startDate?: string;
+  startTime?: string;
   durationHours?: string;
-  shoot_type?: string;
+  type?: string;
   location?: string;
   message?: string;
 }
@@ -77,6 +79,7 @@ interface Review {
 
 export default function PhotographerProfilePage({ params }: { params: Promise<{ full_name: string, id: string }> }) {
   const { id } = use(params)
+  const user = useAuth()
 
   const [formErrors, setFormErrors] = useState<formErrors>({})
 
@@ -90,22 +93,21 @@ export default function PhotographerProfilePage({ params }: { params: Promise<{ 
 
   // Form State
   const [formData, setFormData] = useState<FormData>({
-    booking_date: "",
-    booking_time: "",
+    startDate: "",
+    startTime: "",
     durationHours: 1,
-    shoot_type: "",
+    type: "",
     location: "",
     message: ""
   })
 
   const validateForm = (): formErrors => {
     const errors: formErrors = {}
-    if (!formData.booking_date) errors.booking_date = "Booking date is required"
-    if (!formData.booking_time) errors.booking_time = "Booking time is required"
+    if (!formData.startDate) errors.startDate = "Booking date is required"
+    if (!formData.startTime) errors.startTime = "Booking time is required"
     if (!formData.durationHours) errors.durationHours = "Duration is required"
-    if (!formData.shoot_type) errors.shoot_type = "Shoot type is required"
+    if (!formData.type) errors.type = "Shoot type is required"
     if (!formData.location) errors.location = "Location is required"
-    if (!formData.message) errors.message = "Message is required"
     return errors
   }
 
@@ -197,20 +199,47 @@ export default function PhotographerProfilePage({ params }: { params: Promise<{ 
       return
     }
 
-    const { data: userData, error: userError } = await supabase.auth.getUser()
 
-    if (userError || !userData?.user) {
+
+    if (!user) {
       toast.error("You must be logged in to book.")
       setIsSubmitting(false)
       return
     }
 
     try {
-      const startTime = new Date(`${formData.booking_date}T${formData.booking_time}`).toISOString();
       const durationHours = formData.durationHours;
       const totalPrice = (profile.hourlyRate || 0) * durationHours;
 
-      const { error: bookingError } = await supabase
+        const response = await fetch(`/api/bookings` , {method:'POST' , headers:{'Content-Type':'application/json'},body:JSON.stringify({
+          photographerId:id,
+          startTime:formData.startTime,
+          startDate:formData.startDate,
+          durationHours:formData.durationHours,
+          location:formData.location,
+          type:formData.type,
+          status:"pending",
+          totalPrice:totalPrice,
+          messages:formData.message
+        })})
+
+        if(!response.ok){
+          toast.error("Booking request failed")
+          setIsSubmitting(false)
+          return
+        }
+        const data = await response.json()
+        if(!data.success){
+          toast.error(data.error)
+          setIsSubmitting(false)
+          return
+        }
+        toast.success(data.message)
+        setIsBookingOpen(false)
+        setFormData({ startDate: "",  durationHours: 1, type: "", location: "" , message:'',startTime:""})
+        setIsSubmitting(false)
+
+     /*  const { error: bookingError } = await supabase
         .from("bookings")
         .insert({
           photographer_id: id,
@@ -221,15 +250,9 @@ export default function PhotographerProfilePage({ params }: { params: Promise<{ 
           location: formData.location,
           total_price: totalPrice,
           message: formData.message
-        })
+        }) */
 
-      if (!bookingError) {
-        toast.success("Booking request sent successfully!")
-        setIsBookingOpen(false)
-        setFormData({ booking_date: "", booking_time: "", durationHours: 1, shoot_type: "", location: "", message: "" })
-      } else {
-        toast.error("Failed to send booking request.", { description: bookingError.message })
-      }
+      
     } catch (err) {
       console.error("Error submitting booking:", err)
       toast.error("Failed to send booking request.")
@@ -429,14 +452,14 @@ export default function PhotographerProfilePage({ params }: { params: Promise<{ 
             <form onSubmit={handleBookingSubmit} className="space-y-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 <div className="space-y-2.5">
-                  <Label htmlFor="booking_date" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Date</Label>
-                  <Input id="booking_date" name="booking_date" type="date" required value={formData.booking_date} onChange={handleInputChange} className="h-12 rounded-xl bg-secondary/50 border-transparent focus-visible:ring-accent" />
-                  {formErrors.booking_date && <p className="text-xs text-destructive mt-1">{formErrors.booking_date}</p>}
+                  <Label htmlFor="StartDate" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Date</Label>
+                  <Input id="StartDate" name="startDate" type="date" required value={formData.startDate} onChange={handleInputChange} className="h-12 rounded-xl bg-secondary/50 border-transparent focus-visible:ring-accent" />
+                  {formErrors.startDate && <p className="text-xs text-destructive mt-1">{formErrors.startDate}</p>}
                 </div>
                 <div className="space-y-2.5">
-                  <Label htmlFor="booking_time" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Time</Label>
-                  <Input id="booking_time" name="booking_time" type="time" required value={formData.booking_time} onChange={handleInputChange} className="h-12 rounded-xl bg-secondary/50 border-transparent focus-visible:ring-accent" />
-                  {formErrors.booking_time && <p className="text-xs text-destructive mt-1">{formErrors.booking_time}</p>}
+                  <Label htmlFor="StartTime" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Time</Label>
+                  <Input id="StartTime" name="startTime" type="time" required value={formData.startTime} onChange={handleInputChange} className="h-12 rounded-xl bg-secondary/50 border-transparent focus-visible:ring-accent" />
+                  {formErrors.startTime && <p className="text-xs text-destructive mt-1">{formErrors.startTime}</p>}
                 </div>
               </div>
 
@@ -456,7 +479,7 @@ export default function PhotographerProfilePage({ params }: { params: Promise<{ 
                 </div>
                 <div className="space-y-2.5">
                   <Label htmlFor="shoot_type" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Style</Label>
-                  <Select value={formData.shoot_type} onValueChange={(val) => handleSelectChange('shoot_type', val)}>
+                   <Select value={formData.type} onValueChange={(val) => handleSelectChange('type', val)}>
                     <SelectTrigger className="h-12 rounded-xl bg-secondary/50 border-transparent focus:ring-accent">
                       <SelectValue placeholder="Select type" />
                     </SelectTrigger>

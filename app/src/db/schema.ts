@@ -1,4 +1,4 @@
-import { int, mysqlTable, varchar, mysqlEnum, date, timestamp ,boolean, json, } from 'drizzle-orm/mysql-core';
+import { int, mysqlTable, varchar, mysqlEnum, date, timestamp ,boolean, json, time } from 'drizzle-orm/mysql-core';
 import {relations} from 'drizzle-orm'
 
 export const users = mysqlTable('users', {
@@ -58,13 +58,16 @@ export const booking = mysqlTable("booking",{
   id: int().primaryKey().autoincrement(),
   clientId: int().notNull().references(() => users.id, { onDelete: "cascade" }),
   photographerId: int().notNull().references(() => photographer_profiles.id, { onDelete: "cascade" }),
-  date: date().notNull(),
+  startDate: date().notNull(),
+  startTime:time().notNull(),
   durationHours: int().notNull(),
   location: varchar({ length: 255 }).notNull(),
   type: varchar({ length: 255 }).notNull(),
   status: mysqlEnum("status",["pending", "confirmed", "completed", "cancelled"]).notNull(),
-  totalPrice: int().notNull(),
+  messages: varchar({length:255}).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
+  updataed: timestamp().defaultNow().onUpdateNow(),
+  totalPrice: int().notNull()
 })
 
 

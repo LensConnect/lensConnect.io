@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build --turbopack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db:generate": "bun --env-file=.env.local drizzle-kit generate",
+  "db:push": "bun --env-file=.env.local drizzle-kit push",
+   "db:push:live": "bun --env-file=.env drizzle-kit push"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.3",

@@ -26,18 +26,20 @@ import { motion } from "framer-motion";
 
 type Booking = {
   id: string;
-  client_id: string;
-  photographer_id: string;
-  start_time: string;
-  duration_hours: number;
+  clientId: string;
+  photographerId: string;
+  startTime: string;
+  startDate: string;
+  durationHours: number;
   status: "pending" | "confirmed" | "completed" | "cancelled" | "accepted" | "rejected";
-  total_price: number;
-  shoot_type: string;
+  totalPrice: number;
+  type: string;
   location: string;
-  message?: string;
-  profiles?: {
-    full_name: string;
-  };
+  messages: string;
+  createdAt?: string;
+  client_name?: string;
+  
+  
 };
 
 export default function PhotographerDashboardPage() {
@@ -47,7 +49,23 @@ export default function PhotographerDashboardPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
 
   const fetchBookings = async () => {
-    if (!user) return;
+
+
+    if(! user) return;
+
+    setLoading(true);
+
+    const response = await fetch(`/api/get_bookings?photographerId=${user.id}`, {method: "GET", headers:{'Content-Type':'application/json'}})
+
+    if(!response.ok){
+      toast.error("Failed to fetch bookings")
+      setLoading(false);
+      return;
+    }
+    const data = await response.json();
+    setBookings(data.data || []);
+    setLoading(false);
+   /*  if (!user) return;
     setLoading(true);
     const { data, error } = await supabase
       .from("bookings")
@@ -61,7 +79,7 @@ export default function PhotographerDashboardPage() {
       return;
     }
     setBookings(data || []);
-    setLoading(false);
+    setLoading(false); */
   };
 
   useEffect(() => {
@@ -90,16 +108,16 @@ export default function PhotographerDashboardPage() {
     fetchBookings();
   };
 
-  const upcomingBookings = bookings.filter(b => (b.status === "confirmed" || b.status === "accepted") && b.start_time && new Date(b.start_time).getTime() >= new Date().setHours(0, 0, 0, 0));
+  const upcomingBookings = bookings.filter(b => (b.status === "confirmed" || b.status === "accepted") && b.startDate && new Date(b.startDate).getTime() >= new Date().setHours(0, 0, 0, 0));
   const pendingBookings = bookings.filter(b => b.status === "pending");
   const completedBookings = bookings.filter(b => b.status === "completed");
 
-  const totalEarnings = completedBookings.reduce((sum, b) => sum + (b.total_price || 0), 0);
+  const totalEarnings = completedBookings.reduce((sum, b) => sum + (b.totalPrice || 0), 0);
   const thisMonthEarnings = completedBookings.filter((b) => {
-    const bookingDate = new Date(b.start_time);
+    const bookingDate = new Date(b.startDate);
     const now = new Date();
     return bookingDate.getMonth() === now.getMonth() && bookingDate.getFullYear() === now.getFullYear();
-  }).reduce((sum, b) => sum + (b.total_price || 0), 0);
+  }).reduce((sum, b) => sum + (b.totalPrice || 0), 0);
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground selection:bg-accent selection:text-white">
@@ -226,7 +244,7 @@ function PhotographerBookingCard({ booking, showActions = false, onStatusUpdate 
 
   const status = statusConfig[booking.status as keyof typeof statusConfig] || statusConfig.pending;
   const StatusIcon = status.icon;
-  const durationLabel = booking.duration_hours ? `${booking.duration_hours} ${booking.duration_hours === 1 ? 'hour' : 'hours'}` : "N/A";
+  const durationLabel = booking.durationHours ? `${booking.durationHours} ${booking.durationHours === 1 ? 'hour' : 'hours'}` : "N/A";
 
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="p-8 rounded-3xl bg-secondary/20 border border-border/40 hover:bg-secondary/30 transition-colors flex flex-col lg:flex-row lg:items-center justify-between gap-6">
@@ -234,15 +252,15 @@ function PhotographerBookingCard({ booking, showActions = false, onStatusUpdate 
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-3 mb-1">
-              <h3 className="font-bold text-2xl tracking-tight capitalize">{booking.shoot_type} Session</h3>
+              <h3 className="font-bold text-2xl tracking-tight capitalize">{booking.type} Session</h3>
               <Badge variant="outline" className={`${status.bg} ${status.color} font-semibold uppercase tracking-widest px-3 py-1 text-[10px]`}>
                 <StatusIcon className="h-3 w-3 mr-1.5" />{status.label}
               </Badge>
             </div>
-            <p className="text-muted-foreground font-medium">Client: <span className="text-foreground">{booking.profiles?.full_name || "Confidential"}</span></p>
+            <p className="text-muted-foreground font-medium">Client: <span className="text-foreground">{booking.client_name || "Confidential"}</span></p>
           </div>
           <div className="text-right">
-             <div className="text-3xl font-bold tracking-tight">₦{booking.total_price || 0}</div>
+             <div className="text-3xl font-bold tracking-tight">₦{booking.totalPrice || 0}</div>
              <p className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">Total Revenue</p>
           </div>
         </div>
@@ -250,11 +268,11 @@ function PhotographerBookingCard({ booking, showActions = false, onStatusUpdate 
         <div className="flex flex-wrap gap-6 text-sm font-medium">
           <div className="flex items-center gap-2.5 bg-background/50 px-4 py-2 rounded-xl border border-border/30">
             <Calendar className="h-4 w-4 text-accent" />
-            <span>{booking.start_time ? new Date(booking.start_time).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" }) : "TBD"}</span>
+            <span>{booking.startDate ? new Date(booking.startDate).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" }) : "TBD"}</span>
           </div>
           <div className="flex items-center gap-2.5 bg-background/50 px-4 py-2 rounded-xl border border-border/30">
             <Clock className="h-4 w-4 text-accent" />
-            <span>{booking.start_time ? new Date(booking.start_time).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) : "TBD"} ({durationLabel})</span>
+            <span>{booking.startTime ? (booking.startTime.length <= 8 ? new Date(`1970-01-01T${booking.startTime}Z`).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: 'UTC' }) : new Date(booking.startTime).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })) : "TBD"} ({durationLabel})</span>
           </div>
           <div className="flex items-center gap-2.5 bg-background/50 px-4 py-2 rounded-xl border border-border/30">
             <MapPin className="h-4 w-4 text-accent" />
@@ -262,9 +280,9 @@ function PhotographerBookingCard({ booking, showActions = false, onStatusUpdate 
           </div>
         </div>
 
-        {booking.message && (
+        {booking.messages && (
           <div className="mt-4 p-5 rounded-2xl bg-background/40 border border-border/30">
-            <p className="text-sm font-medium leading-relaxed italic text-muted-foreground">"{booking.message}"</p>
+            <p className="text-sm font-medium leading-relaxed italic text-muted-foreground">"{booking.messages}"</p>
           </div>
         )}
       </div>

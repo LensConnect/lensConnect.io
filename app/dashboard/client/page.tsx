@@ -35,7 +35,7 @@ type Booking = {
   location: string;
   message?: string;
   profiles?: {
-  full_name: string;
+    full_name: string;
   };
 };
 
@@ -129,7 +129,7 @@ export default function ClientDashboardPage() {
           </motion.div>
 
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.1 }} className="p-8 rounded-[2rem] bg-accent border border-border/40 group overflow-hidden relative">
-             <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
             <div className="flex items-center justify-between mb-4 relative z-10">
               <h3 className="text-sm font-semibold uppercase tracking-widest text-white/80">Upcoming</h3>
               <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center"><Clock className="w-5 h-5 text-white" /></div>
@@ -236,8 +236,8 @@ function ClientBookingCard({ booking, showCancel = false, showReview = false, on
             <p className="text-muted-foreground font-medium">Photographer: <span className="text-foreground">{booking.profiles?.full_name || "Unknown"}</span></p>
           </div>
           <div className="sm:text-right">
-             <div className="text-3xl font-bold tracking-tight">${booking.total_price || 0}</div>
-             <p className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">Total Cost</p>
+            <div className="text-3xl font-bold tracking-tight">${booking.total_price || 0}</div>
+            <p className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">Total Cost</p>
           </div>
         </div>
 
@@ -250,7 +250,7 @@ function ClientBookingCard({ booking, showCancel = false, showReview = false, on
             <Clock className="h-4 w-4 text-accent" />
             <span>{booking.start_time ? new Date(booking.start_time).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", }) : "Time N/A"} ({booking.duration_hours} {booking.duration_hours === 1 ? 'hr' : 'hrs'})</span>
           </div>
-           <div className="flex items-center gap-2.5 bg-background/50 px-4 py-2 rounded-xl border border-border/30">
+          <div className="flex items-center gap-2.5 bg-background/50 px-4 py-2 rounded-xl border border-border/30">
             <MapPin className="h-4 w-4 text-accent" />
             <span>{booking.location}</span>
           </div>

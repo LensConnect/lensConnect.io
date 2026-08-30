@@ -1,10 +1,6 @@
 import { NextResponse, NextRequest } from 'next/server'
 import { db } from '@/app/src'
-import { photographer_profiles } from '@/app/src/db/schema'
-import { cookies } from 'next/headers';
-import { verifyToken, SessionPayload } from '@/lib/auth';
-import {eq} from 'drizzle-orm';
-import {users, profiles} from '@/app/src/db/schema';
+import { photographer_profiles, users } from '@/app/src/db/schema'
 
 
 export async function POST(req: NextRequest) {
@@ -23,17 +19,16 @@ export async function POST(req: NextRequest) {
       bio,
       availability,
       location,
-      updatedAt,
     } = body
 
-    // Validate required fields
-    /* if (!userId || !fullname || !email || !role) {
+    // Validate required fields explicitly
+    if (!userId) {
       return NextResponse.json(
-        { error: 'userId, fullname, email, and role are required' },
+        { error: 'userId is required' },
         { status: 400 }
       )
     }
- */
+
     await db.insert(photographer_profiles).values({
       userId: Number(userId),
       fullname,
@@ -46,7 +41,7 @@ export async function POST(req: NextRequest) {
       hourlyRate: Number(hourlyRate) || 0,
       specialties: specialties || [],
       availability: availability ?? true,
-
+      portfolio_image_url: [], // explicit default
     })
 
     return NextResponse.json(
@@ -64,16 +59,28 @@ export async function POST(req: NextRequest) {
 }
 
 
-export async function GET(req: NextRequest){
+
+export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
-    const targetUserId = Number(searchParams.get('userId'))
+    const rawUserId = searchParams.get('userId')
 
+    // 1. Defend against missing or empty userId query parameter
+    if (!rawUserId) {
+      return NextResponse.json(
+        { error: 'userId query parameter is required' },
+        { status: 400 }
+      )
+    }
+
+    const targetUserId = Number(rawUserId)
+
+    // 2. Fetch Photographer using unified Drizzle v2 functional API style
     const photographer = await db.query.users.findFirst({
-      where: (users, { eq, and }) => and(
-        eq(users.id, targetUserId),
-        eq(users.role, 'photographer')
-      ),
+    where: {
+        id: targetUserId,
+        role: 'photographer',
+      },
       with: {
         photographer_profiles: true,
         profiles: true,
@@ -81,8 +88,26 @@ export async function GET(req: NextRequest){
     });
 
     if (photographer) {
-      const pp = photographer.photographer_profiles;
-      const p = photographer.profiles;
+      // Drizzle v2 handles 1-to-1 relationships safely; fallbacks kept for safety
+      const pp = Array.isArray(photographer.photographer_profiles) 
+        ? photographer.photographer_profiles[0] 
+        : photographer.photographer_profiles;
+
+      const p = Array.isArray(photographer.profiles) 
+        ? photographer.profiles[0] 
+        : photographer.profiles;
+
+      // Extract portfolio URL safely from stringified or direct JSON structures
+      let portfolioUrl = '';
+      if (pp?.portfolio_image_url) {
+        const images = typeof pp.portfolio_image_url === 'string' 
+          ? JSON.parse(pp.portfolio_image_url) 
+          : pp.portfolio_image_url;
+        if (Array.isArray(images) && images.length > 0) {
+          portfolioUrl = images[0];
+        }
+      }
+      
       return NextResponse.json({
         result: {
           id: photographer.id,
@@ -95,25 +120,27 @@ export async function GET(req: NextRequest){
           hourly_rate: pp?.hourlyRate || 0,
           experience: pp?.experience || 0,
           specialties: pp?.specialties || [],
-          portfolio_url: pp?.portfolio_image_url?.[0] || '',
+          portfolio_url: portfolioUrl,
           profile_image_url: p?.imageUrl || '',
           website: p?.website || '',
         }
       }, { status: 200 })
     }
 
+    // 3. Fetch Client using unified Drizzle v2 functional API style
     const client = await db.query.users.findFirst({
-      where: (users, { eq, and }) => and(
-        eq(users.id, targetUserId),
-        eq(users.role, 'client')
-      ),
+     where: {
+        id: targetUserId,
+        role: 'client',
+      },
       with: {
         profiles: true,
       },
     });
 
     if (client) {
-      const p = client.profiles;
+      const p = Array.isArray(client.profiles) ? client.profiles[0] : client.profiles;
+      
       return NextResponse.json({
         result: {
           id: client.id,
@@ -126,7 +153,6 @@ export async function GET(req: NextRequest){
           website: p?.website || '',
           imageUrl: p?.imageUrl || '',
           profile_image_url: p?.imageUrl || '',
-        
         }
       }, { status: 200 })
     }
@@ -137,4 +163,3 @@ export async function GET(req: NextRequest){
     return NextResponse.json({ error: 'Failed to fetch user profile' }, { status: 500 })
   }
 }
-  

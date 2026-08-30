@@ -41,7 +41,7 @@ export default function SearchPage() {
     try {
       setLoading(true)
       const response = await fetch("/api/get_photographer_profiles", {
-        method: "GET", headers:{
+        method: "GET", headers: {
           'Content-Type': 'application/json',
         }
       })
@@ -55,20 +55,20 @@ export default function SearchPage() {
 
       if (data) {
         console.log(data)
-          const mappedPhotographers = data.map((profile: any) => ({
-            id: profile.id,
-            userId: profile.userId,
-            profile_image_url: profile.profile_image_url,
-            location: profile.location || "",
-            hourlyRate: profile.hourlyRate || 0,
-            specialties: profile.specialties || [],
-            bio: profile.bio || "",
-            fullname: profile.fullname || "Unknown Photographer",
-            rating: profile.rating || 0,
-            reviewCount: profile.reviewCount || 0,
-            portfolioImages: profile.portfolio_image_url || [],
-            availability: profile.availability ?? true,
-          }))
+        const mappedPhotographers = data.map((profile: any) => ({
+          id: profile.id,
+          userId: profile.userId,
+          profile_image_url: profile.profile_image_url,
+          location: profile.location || "",
+          hourlyRate: profile.hourlyRate || 0,
+          specialties: profile.specialties || [],
+          bio: profile.bio || "",
+          fullname: profile.fullname || "Unknown Photographer",
+          rating: profile.rating || 0,
+          reviewCount: profile.reviewCount || 0,
+          portfolioImages: profile.portfolio_image_url || [],
+          availability: profile.availability ?? true,
+        }))
         setPhotographers(mappedPhotographers)
       }
     } catch (error) {
@@ -82,11 +82,7 @@ export default function SearchPage() {
     fetchPhotographers()
   }, [])
 
-  const names = photographers.map((photo) =>(
-    <div key={photo.id}>
-      {photo.fullname}
-    </div>
-  ))
+
 
   const filteredPhotographers = useMemo(() => {
     const filtered = photographers.filter((photographer) => {
@@ -111,7 +107,7 @@ export default function SearchPage() {
     })
 
     return filtered
-  }, [photographers, searchQuery, location, selectedSpecialties, priceRange, minRating, sortBy]) 
+  }, [photographers, searchQuery, location, selectedSpecialties, priceRange, minRating, sortBy])
 
 
   return (
@@ -141,7 +137,7 @@ export default function SearchPage() {
           {/* Minimalist Sidebar Filters */}
           <AnimatePresence>
             {(showFilters || typeof window !== 'undefined' && window.innerWidth >= 1024) && (
-              <motion.aside 
+              <motion.aside
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
@@ -263,9 +259,9 @@ export default function SearchPage() {
             ) : filteredPhotographers.length > 0 ? (
               /* MASONRY GRID LAYOUT */
               <div className="columns-1 sm:columns-2 gap-6 space-y-6 pt-4">
-                {filteredPhotographers.map((photographer) => (
+                {filteredPhotographers.map((photographer, idx) => (
                   <Link
-                    key={photographer.id}
+                    key={photographer.id || idx}
                     href={`/photographer/${photographer.fullname}/${photographer.id}`}
                     className="group block break-inside-avoid"
                   >
@@ -287,13 +283,13 @@ export default function SearchPage() {
                           </div>
                         )}
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                        
+
                         {/* Hover action */}
                         <div className="absolute inset-x-0 bottom-0 p-6 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500 ease-out z-20 flex justify-between items-end">
-                           <span className="text-white font-medium shadow-sm">View Portfolio</span>
-                           <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white">
-                             <Search className="w-4 h-4" />
-                           </div>
+                          <span className="text-white font-medium shadow-sm">View Portfolio</span>
+                          <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white">
+                            <Search className="w-4 h-4" />
+                          </div>
                         </div>
                       </div>
 
@@ -317,7 +313,7 @@ export default function SearchPage() {
 
                         <div className="flex items-center gap-1.5 mb-5 font-medium">
                           <Star className="h-4 w-4 fill-foreground text-foreground" />
-                          <span>{(photographer.rating || 0).toFixed(1)}</span>
+                          <span>{(photographer.rating || 0)}</span>
                           <span className="text-muted-foreground text-sm ml-1">· {photographer.reviewCount || 0} reviews</span>
                         </div>
 

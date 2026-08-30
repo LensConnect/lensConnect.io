@@ -24,7 +24,24 @@ export async function GET(req: NextRequest) {
         }
 
 
-        return NextResponse.json({ data, error: '', status: 200, success: true });
+        const bookingResult = data.map((booking) => ({
+            id: booking.id,
+            clientId: booking.clientId,
+            photographerId: booking.photographerId,
+            startTime: booking.startTime,
+            startDate: booking.startDate,
+            durationHours: booking.durationHours,
+            status: booking.status,
+            totalPrice: booking.totalPrice,
+            type: booking.type,
+            location: booking.location,
+            messages: booking.messages,
+            created_at: booking.createdAt,
+            client_name: booking.client_name,
+        }))
+
+
+        return NextResponse.json({ data: bookingResult, error: '', status: 200, success: true });
     }
     catch (err) {
         return NextResponse.json({ error: 'Failed to fetch photographer', status: 500, success: false })

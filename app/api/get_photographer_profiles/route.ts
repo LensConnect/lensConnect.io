@@ -12,9 +12,8 @@ interface PhotographerRow {
     hourlyRate: number;
     specialties: string | string[]; // MySQL JSON fields can return as strings or parsed arrays
     role: string;
-    // Add these fields to the query if they exist in your table columns:
-    profile_image_url?: string | null;
-    availability?: boolean | number;
+    profile_image_url: string;
+    availability: boolean | number;
 }
 
 export async function GET(req: NextRequest) {
@@ -30,10 +29,10 @@ export async function GET(req: NextRequest) {
                hourlyRate,
                specialties,
                role,
-              
-               availability       -- ✅ Added to fix frontend undefined bug
+               profile_image_url,
+               availability      
              FROM photographer_profiles
-             WHERE role = 'photographer' -- Filter out non-photographers instantly at DB level
+             WHERE role = 'photographer'
          `);
 
         if (!Array.isArray(rows)) {

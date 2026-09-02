@@ -1,0 +1,1 @@
+ALTER TABLE `photographer_portfolios` ADD `location` varchar(255) NOT NULL;

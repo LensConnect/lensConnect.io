@@ -69,7 +69,7 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 py-2">
-      <div className="container mx-auto flex h-16 items-center justify-between px-6">
+      <div className="container mx-auto flex h-16 items-center justify-between px-4 sm:px-6 gap-4">
         <Link href="/" className="flex items-center gap-2 shrink-0 transition-transform hover:scale-105">
           <Image
             src="/logo.png"
@@ -78,10 +78,10 @@ export function Header() {
             height={36}
             className="h-9 w-9 object-contain"
           />
-          <span className="text-2xl font-black tracking-tight uppercase">LensConnect</span>
+          <span className="text-xl sm:text-2xl font-black tracking-tight uppercase">LensConnect</span>
         </Link>
 
-        <nav className="hidden xl:flex absolute left-1/2 -translate-x-1/2 items-center gap-1 lg:gap-4 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+        <nav className=" md:hidden  lg:flex items-center gap-1 xl:gap-2 flex-1 justify-center max-w-2xl overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           {navLinks.map((link) => {
             if (!link.roles.includes(currentRole)) return null;
             const active = isActiveLink(link.href);
@@ -89,7 +89,7 @@ export function Header() {
               <Link
                 key={link.href}
                 href={link.href}
-                className={`whitespace-nowrap shrink-0 text-sm font-bold tracking-tight transition-all px-4 py-2 rounded-full ${
+                className={`whitespace-nowrap shrink-0 text-sm font-bold tracking-tight transition-all px-3 xl:px-4 py-2 rounded-full ${
                   active
                     ? "text-primary bg-primary/5"
                     : "text-foreground/60 hover:text-foreground hover:bg-muted"
@@ -101,8 +101,8 @@ export function Header() {
           })}
         </nav>
 
-        <div className="flex items-center gap-4 shrink-0">
-          <button className="hidden lg:flex p-2 hover:bg-muted rounded-full transition-colors">
+        <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+          <button className="hidden xl:flex p-2 hover:bg-muted rounded-full transition-colors">
             <Search className="h-5 w-5 text-foreground/60" />
           </button>
 
@@ -168,12 +168,12 @@ export function Header() {
             </DropdownMenu>
           ) : (
             <>
-              <Button variant="ghost" asChild className="hidden md:inline-flex font-bold rounded-full">
+              <Button variant="ghost" asChild className="hidden sm:inline-flex font-bold rounded-full">
                 <Link href="/login">Log in</Link>
               </Button>
               <Button
                 asChild
-                className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 font-bold px-8 h-12 transition-all hover:scale-105 active:scale-95 shadow-lg shadow-primary/20"
+                className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 font-bold px-4 sm:px-8 h-11 sm:h-12 transition-all hover:scale-105 active:scale-95 shadow-lg shadow-primary/20"
               >
                 <Link href="/signup">
                   Sign up <ArrowRight className="ml-2 h-4 w-4" />
@@ -184,7 +184,7 @@ export function Header() {
 
           <Sheet>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="xl:hidden">
+              <Button variant="ghost" size="icon" className="lg:hidden">
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>

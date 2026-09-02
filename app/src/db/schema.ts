@@ -7,6 +7,7 @@ export const users = mysqlTable('users', {
   email: varchar({ length: 255 }).notNull().unique(),
   role: mysqlEnum("role", ["client", "photographer"]).notNull(),
   passwordHash: varchar("password_hash", { length: 255 }),
+  profile_image_url: varchar({length: 255})
 });
 
 export const jobpost = mysqlTable('jobpost', {
@@ -31,6 +32,7 @@ export const profiles = mysqlTable("profiles", {
   bio: varchar({ length: 400 }),
   website: varchar({ length: 255 }),
   location: varchar({ length: 255 }),
+  profile_image_url: varchar({length:255}),
   updatedAt: timestamp().defaultNow().onUpdateNow(),
 });
 
@@ -49,6 +51,8 @@ export const photographer_profiles = mysqlTable("photographer_profiles", {
   specialties: json('specialties').$type<string[]>().default([]),
   availability: boolean().notNull(),
   portfolio_image_url: json('portfolio_image_url').$type<string[]>().default([]),
+  profile_image_url: varchar({length: 255}),
+  
 });
 
 export const booking = mysqlTable("booking", {
@@ -85,6 +89,20 @@ export const job_applications = mysqlTable('job_applications', {
   status: mysqlEnum("status", ["pending", "accepted", "rejected"]).notNull(),
   isRead: boolean().default(false),
 });
+
+
+export const photographer_portfolios = mysqlTable("photographer_portfolios", {
+  id: int().primaryKey().autoincrement(),
+  photographerId: int().notNull().references(() => photographer_profiles.id, { onDelete: "cascade" }),
+  title: varchar({ length: 255 }).notNull(),
+  description: varchar({ length: 1000 }).notNull(),
+  imageUrl: json("imageUrl").$type<string[]>().default([]),
+  category:json("category").$type<string[]>().default([]),
+  location: varchar({ length: 255 }).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp().defaultNow().onUpdateNow(),
+  
+})
 
 // ✅ FIX: The export MUST be named exactly 'relations'
 export const relations = defineRelations(

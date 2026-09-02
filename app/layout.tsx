@@ -6,6 +6,8 @@ import { AuthProvider } from "@/lib/auth-context";
 import { Providers } from "@/components/providers";
 import "./globals.css";
 import { Suspense } from "react";
+import "@uploadthing/react/styles.css"; 
+
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ["latin"],

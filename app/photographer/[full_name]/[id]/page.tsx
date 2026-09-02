@@ -6,7 +6,6 @@ import { Header } from "@/components/header"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { supabase } from "@/lib/supabaseClient"
 import { Separator } from "@/components/ui/separator"
 import { Star, MapPin, Calendar, MessageSquare, CheckCircle2, Loader2 } from "lucide-react"
 import Link from "next/link"
@@ -138,13 +137,14 @@ export default function PhotographerProfilePage({ params }: { params: Promise<{ 
           setProfile(data.data[0])
         } 
         // Fetch photographer portfolio
-        const { data: portfolioData } = await supabase
-          .from("photographer_portfolio")
-          .select("*")
-          .eq("photographer_id", id)
+        const portfolioResponse = await fetch(
+          `/api/portfolios?photographerId=${id}`,
+          { method: "GET", headers: { "Content-Type": "application/json" } }
+        );
+        const portfolioData = await portfolioResponse.json();
 
-        if (portfolioData) {
-          setPortfolioItems(portfolioData)
+        if (portfolioData.success && portfolioData.portfolios) {
+          setPortfolioItems(portfolioData.portfolios);
         }
 
         // Fetch photographer reviews

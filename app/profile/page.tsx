@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-
+import {ProfileUploadZone} from "@/components/ProfileUploadZone";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/lib/auth-context";
 import { Header } from "@/components/header";
@@ -12,7 +12,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 
 import {
     Camera,
@@ -26,6 +25,10 @@ import {
     Save,
     Loader2,
     Image as ImageIcon,
+    ArrowLeft,
+    Sparkles,
+    User as UserIcon,
+    CheckCircle2,
 } from "lucide-react";
 
 import { motion } from "framer-motion";
@@ -41,12 +44,13 @@ interface ProfileData {
     fullname: string;
     email: string;
     role: UserRole;
+    userId:number;
 
     phoneNumber: string;
     bio: string;
     location: string;
 
-    hourly_rate?: number;
+    hourlyRate?: number;
     experience?: number;
 
     specialties?: string[];
@@ -56,6 +60,17 @@ interface ProfileData {
     profile_image_url?: string;
 
     website?: string;
+
+    initialData?:{
+    id: string;
+    userId: string;
+    fullname: string;
+    role: "client" | "photographer";
+    bio: string;
+    location: string;
+    hourly_rate?: number; // Optional: Only for photographers
+    experience?: number;  
+    }
 }
 
 interface PortfolioItem {
@@ -86,6 +101,8 @@ const AVAILABLE_SPECIALTIES = [
 
 
 
+
+
 export default function ProfilePage() {
     const router = useRouter();
 
@@ -95,6 +112,7 @@ export default function ProfilePage() {
 
     const [saving, setSaving] = useState(false);
     const [uploading, setUploading] = useState(false);
+    const [apiMessage, setApiMessage] = useState<{ text: string; success: boolean } | null>(null);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -126,7 +144,7 @@ export default function ProfilePage() {
                     headers: {
                         "Content-Type": "application/json",
                     },
-                    cache: "no-store",
+                  
                 }
             );
 
@@ -323,6 +341,30 @@ export default function ProfilePage() {
             return;
         }
 
+        const payload: Record<string, any> = {
+      userId: profile.id,
+      fullname: profile.fullname,
+      bio: profile.bio,
+      location: profile.location,
+      phoneNumber: profile.phoneNumber,
+    };
+
+
+    if(profile.role === 'photographer'){
+      payload.hourlyRate = profile.hourlyRate;
+      payload.experience = profile.experience;
+      payload.specialties = profile.specialties;
+      payload.profile_image_url = profile.profile_image_url;
+      payload.bio = profile.bio;
+      payload.availability = true;
+    }
+
+    if(profile.role === 'client'){
+      payload.imageUrl = profile.profile_image_url;
+      payload.website = profile.website || '';
+    }
+
+
         try {
             setSaving(true);
 
@@ -337,7 +379,7 @@ export default function ProfilePage() {
              * photographer_profiles.
              */
 
-            const {
+            /* const {
                 error,
             } = await supabase
                 .from("profiles")
@@ -357,25 +399,38 @@ export default function ProfilePage() {
             }
 
 
-            toast.success(
-                "Profile settings saved successfully"
-            );
+            
 
+
+            
+ */
+
+         
+
+            const response = await fetch(`/api/profiles?userId=${user?.id}`, {method:'PATCH', headers:{'Content-Type': 'application/json' }, body:JSON.stringify(payload)})
+
+            const data = await response.json();
+           
+            if(response.ok && data.success){
+                setApiMessage({text:'Profile updated successfully', success:true})
+            }
+            else{
+                setApiMessage({text: data.error || 'Profile updated failed', success:false})
+            }
+
+           setTimeout(() => {
+            setApiMessage(null)
+           }, 3000);
         } catch (error: any) {
             console.error(
                 "Error saving profile:",
                 error
             );
-
-            toast.error(
-                `Failed to save profile: ${
-                    error?.message ||
-                    "Unknown error"
-                }`
-            );
+            setApiMessage({text:'Profile updated failed', success:false});
 
         } finally {
             setSaving(false);
+            
         }
     };
 
@@ -405,7 +460,7 @@ export default function ProfilePage() {
     }
 
 
-   
+  
 
     if (!profile) {
         return (
@@ -434,644 +489,435 @@ export default function ProfilePage() {
     
 
     return (
-        <div className="min-h-screen bg-background text-foreground font-sans selection:bg-accent selection:text-white pb-24">
+        <div className="w-full min-h-screen overflow-x-hidden bg-white text-gray-900">
 
-            {/* HEADER */}
+            <Header />
 
-            <div className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/40">
-                <Header />
+            {/* Hero banner */}
+            <div className="relative overflow-hidden border-b border-gray-100 bg-white">
+                <div className="relative mx-auto max-w-[1300px] px-4 py-10">
+                    <Link
+                        href={isPhotographer ? "/dashboard" : "/dashboard/client"}
+                        className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-[#FF4F01] transition-colors mb-6"
+                    >
+                        <ArrowLeft className="h-4 w-4" />
+                        Back to Dashboard
+                    </Link>
+
+                    <div className="flex items-center gap-3">
+                        <div
+                            className="flex h-12 w-12 items-center justify-center rounded-xl shadow-md"
+                            style={{ background: "linear-gradient(135deg, #FF4F01, #FF8C42)" }}
+                        >
+                            <UserIcon className="h-6 w-6 text-white" />
+                        </div>
+                        <div>
+                            <h1 className="text-3xl font-bold text-gray-900">Your Profile</h1>
+                            <p className="text-gray-400 text-sm mt-0.5">
+                                Manage how clients and collaborators see you
+                            </p>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-
-            {/* PROFILE HERO */}
-
-            <section className="relative pt-12 md:pt-24 pb-12 overflow-hidden border-b border-border/40 bg-muted/30">
-
-                <div className="container mx-auto max-w-5xl px-6 relative z-10">
-
-                    <motion.div
-                        initial={{
-                            opacity: 0,
-                            y: 20,
-                        }}
-                        animate={{
-                            opacity: 1,
-                            y: 0,
-                        }}
-                        transition={{
-                            duration: 0.5,
-                        }}
-                        className="flex flex-col md:flex-row items-center md:items-start gap-8 md:gap-12"
+            {/* API message toast */}
+            {apiMessage && (
+                <div className="mx-auto max-w-[1300px] px-4 mt-6">
+                    <div
+                        className={`p-3 rounded-xl text-sm text-center font-semibold border ${
+                            apiMessage.success
+                                ? "bg-green-50 text-green-700 border-green-200"
+                                : "bg-red-50 text-red-700 border-red-200"
+                        }`}
                     >
-
-                        {/* AVATAR */}
-
-                        <div className="relative group shrink-0">
-
-                            <div className="relative h-40 w-40 md:h-48 md:w-48 rounded-full border-4 border-background bg-secondary overflow-hidden shadow-2xl">
-
-                                {profile.profile_image_url ? (
-
-                                    <img
-                                        src={profile.profile_image_url}
-                                        className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
-                                        alt={displayName}
-                                    />
-
-                                ) : (
-
-                                    <div className="h-full w-full flex items-center justify-center bg-secondary">
-
-                                        <Camera className="h-12 w-12 text-muted-foreground/30" />
-
-                                    </div>
-
-                                )}
-
-
-                                {/* UPLOAD OVERLAY */}
-
-                                <div
-                                    className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center cursor-pointer transition-opacity duration-300 backdrop-blur-sm"
-                                    onClick={() =>
-                                        fileInputRef.current?.click()
-                                    }
-                                >
-
-                                    {uploading ? (
-                                        <Loader2 className="h-6 w-6 text-white animate-spin mb-2" />
-                                    ) : (
-                                        <Camera className="h-6 w-6 text-white mb-2" />
-                                    )}
-
-                                    <span className="text-[10px] font-bold uppercase tracking-widest text-white">
-                                        {uploading
-                                            ? "Uploading"
-                                            : "Update Photo"
-                                        }
-                                    </span>
-
-                                </div>
-
-
-                                <input
-                                    type="file"
-                                    ref={fileInputRef}
-                                    className="hidden"
-                                    accept="image/*"
-                                    onChange={handleImageUpload}
-                                />
-
-                            </div>
-
-                        </div>
-
-
-                        {/* MAIN INFO */}
-
-                        <div className="flex-1 space-y-6 w-full text-center md:text-left pt-2 md:pt-4">
-
-                            <div className="space-y-4">
-
-                                {isPhotographer && (
-
-                                    <Badge
-                                        variant="outline"
-                                        className="px-3 py-1 text-[10px] font-bold uppercase tracking-widest bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
-                                    >
-                                        <Award className="w-3 h-3 mr-1.5" />
-                                        Verified Creator
-                                    </Badge>
-
-                                )}
-
-
-                                <div className="space-y-3 max-w-lg mx-auto md:mx-0">
-
-                                    <Input
-                                        name="fullname"
-                                        value={profile.fullname || ""}
-                                        onChange={handleChange}
-                                        className="text-4xl md:text-5xl font-bold tracking-tight p-0 border-0 bg-transparent placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 h-auto text-center md:text-left"
-                                        placeholder="Your Name"
-                                    />
-
-                                    <Input
-                                        name="role"
-                                        value={profile.role || ""}
-                                        disabled
-                                        className="text-lg md:text-xl font-medium text-muted-foreground capitalize p-0 border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 h-auto text-center md:text-left cursor-not-allowed opacity-70"
-                                        placeholder="Account Role"
-                                    />
-
-                                </div>
-
-                            </div>
-
-
-                            {/* ACTIONS */}
-
-                            <div className="flex flex-col sm:flex-row justify-center md:justify-start gap-4 pt-4">
-
-                                <Button
-                                    size="lg"
-                                    onClick={handleSave}
-                                    disabled={saving}
-                                    className="rounded-xl px-8 font-semibold shadow-lg min-w-[160px]"
-                                >
-
-                                    {saving ? (
-                                        <>
-                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                            Saving
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Save className="mr-2 h-4 w-4" />
-                                            Save Settings
-                                        </>
-                                    )}
-
-                                </Button>
-
-
-                                {isPhotographer && (
-
-                                    <Button
-                                        variant="outline"
-                                        size="lg"
-                                        className="rounded-xl px-8 bg-transparent"
-                                        asChild
-                                    >
-
-                                        <Link
-                                            href={`/photographer/${encodeURIComponent(
-                                                profile.fullname
-                                            )}/${profile.id}`}
-                                        >
-
-                                            <ExternalLink className="h-4 w-4 mr-2" />
-
-                                            View Public Profile
-
-                                        </Link>
-
-                                    </Button>
-
-                                )}
-
-                            </div>
-
-                        </div>
-
-                    </motion.div>
-
+                        {apiMessage.text}
+                    </div>
                 </div>
-
-            </section>
-
-
-            {/* MAIN */}
-
-            <main className="container mx-auto max-w-5xl px-6 py-12">
-
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-
-                    <div className="lg:col-span-12 space-y-12">
-
-
-                        {/* CONTACT */}
-
-                        <motion.section
-                            initial={{
-                                opacity: 0,
-                                y: 20,
-                            }}
-                            animate={{
-                                opacity: 1,
-                                y: 0,
-                            }}
-                            transition={{
-                                duration: 0.5,
-                                delay: 0.1,
-                            }}
-                            className="space-y-6"
-                        >
-
-                            <h2 className="text-xl font-bold tracking-tight flex items-center gap-2 border-b border-border/50 pb-4">
-
-                                <Mail className="h-5 w-5 text-accent" />
-
-                                Contact Details
-
-                            </h2>
-
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-                                {/* EMAIL */}
-
-                                <div className="space-y-2">
-
-                                    <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                                        Email Address
-                                    </Label>
-
-                                    <Input
-                              
-                                        name="email"
-                                                  disabled
-                                        value={profile.email || ""}
-                                        className="bg-secondary/20 h-12 rounded-xl text-muted-foreground cursor-not-allowed border-transparent"
-                                    />
-
-                                </div>
-
-
-                                {/* PHONE */}
-
-                                <div className="space-y-2">
-
-                                    <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                                        Phone Number
-                                    </Label>
-
-                                    <div className="relative">
-
-                                        <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-
-                                        <Input
-                                            name="phone"
-                                            value={profile.phoneNumber || ""}
-                                            onChange={handleChange}
-                                            placeholder="+1 (555) 000-0000"
-                                            className="pl-11 bg-secondary/30 h-12 rounded-xl border-transparent focus-visible:ring-accent transition-all"
-                                        />
-
-                                    </div>
-
-                                </div>
-
-
-                                {/* LOCATION */}
-
-                                <div className="space-y-2 md:col-span-2">
-
-                                    <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                                        Location
-                                    </Label>
-
-                                    <div className="relative">
-
-                                        <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-
-                                        <Input
-                                            name="location"
-                                            value={profile.location || ""}
-                                            onChange={handleChange}
-                                            placeholder="City, State, Country"
-                                            className="pl-11 bg-secondary/30 h-12 rounded-xl border-transparent focus-visible:ring-accent transition-all"
-                                        />
-
-                                    </div>
-
-                                </div>
-
-                            </div>
-
-                        </motion.section>
-
-
-                        {/* PHOTOGRAPHER */}
-
-                        {isPhotographer && (
-
-                            <motion.section
-                                initial={{
-                                    opacity: 0,
-                                    y: 20,
-                                }}
-                                animate={{
-                                    opacity: 1,
-                                    y: 0,
-                                }}
-                                transition={{
-                                    duration: 0.5,
-                                    delay: 0.2,
-                                }}
-                                className="space-y-6"
-                            >
-
-                                <h2 className="text-xl font-bold tracking-tight flex items-center gap-2 border-b border-border/50 pb-4">
-
-                                    <Briefcase className="h-5 w-5 text-accent" />
-
-                                    Professional Overview
-
-                                </h2>
-
-
-                                {/* RATE / EXPERIENCE */}
-
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-
-                                    <div className="space-y-2">
-
-                                        <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                                            Hourly Rate ($)
-                                        </Label>
-
-                                        <Input
-                                            name="hourly_rate"
-                                            type="number"
-                                            value={profile.hourly_rate || ""}
-                                            onChange={handleChange}
-                                            placeholder="150"
-                                            className="bg-secondary/30 h-12 rounded-xl border-transparent font-semibold focus-visible:ring-accent transition-all"
-                                        />
-
-                                    </div>
-
-
-                                    <div className="space-y-2">
-
-                                        <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                                            Years Experience
-                                        </Label>
-
-                                        <Input
-                                            name="experience"
-                                            type="number"
-                                            value={profile.experience || ""}
-                                            onChange={handleChange}
-                                            placeholder="5"
-                                            className="bg-secondary/30 h-12 rounded-xl border-transparent font-semibold focus-visible:ring-accent transition-all"
-                                        />
-
-                                    </div>
-
-                                </div>
-
-
-                                {/* BIO */}
-
-                                <div className="space-y-3 pt-2">
-
-                                    <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                                        Biography & Creative Vision
-                                    </Label>
-
-                                    <Textarea
-                                        name="bio"
-                                        value={profile.bio || ""}
-                                        onChange={handleChange}
-                                        className="min-h-[160px] bg-secondary/30 border-transparent rounded-xl resize-none leading-relaxed focus-visible:ring-accent transition-all p-5"
-                                        placeholder="Describe your style, vision, and what makes your work unique..."
-                                    />
-
-                                </div>
-
-
-                                {/* SPECIALTIES */}
-
-                                <div className="space-y-4 pt-2">
-
-                                    <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                                        Creative Specialties
-                                    </Label>
-
-                                    <div className="flex flex-wrap gap-2.5">
-
-                                        {AVAILABLE_SPECIALTIES.map(
-                                            (specialty) => {
-
-                                                const isSelected =
-                                                    profile.specialties?.includes(
-                                                        specialty
-                                                    );
-
-                                                return (
-
-                                                    <button
-                                                        key={specialty}
-                                                        type="button"
-                                                        onClick={() =>
-                                                            toggleSpecialty(
-                                                                specialty
-                                                            )
-                                                        }
-                                                        className={`px-4 py-2 rounded-full text-xs font-semibold tracking-wide border transition-all duration-200 ${
-                                                            isSelected
-                                                                ? "bg-foreground text-background border-foreground shadow-md"
-                                                                : "bg-transparent text-muted-foreground border-border hover:border-foreground/50 hover:text-foreground"
-                                                        }`}
-                                                    >
-                                                        {specialty}
-                                                    </button>
-
-                                                );
-                                            }
-                                        )}
-
-                                    </div>
-
-                                </div>
-
-
-                                {/* PORTFOLIO URL */}
-
-                                <div className="space-y-3 pt-2">
-
-                                    <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                                        External Portfolio Link
-                                    </Label>
-
-                                    <div className="relative">
-
-                                        <Globe className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-
-                                        <Input
-                                            name="portfolio_url"
-                                            value={
-                                                profile.portfolio_url || ""
-                                            }
-                                            onChange={handleChange}
-                                            className="pl-11 bg-secondary/30 h-12 rounded-xl border-transparent focus-visible:ring-accent transition-all"
-                                            placeholder="https://your-portfolio.com"
-                                        />
-
-                                    </div>
-
-                                </div>
-
-                            </motion.section>
-
-                        )}
-
-
-                        {/* PORTFOLIO */}
-
-                        {isPhotographer && (
-
-                            <motion.section
-                                initial={{
-                                    opacity: 0,
-                                    y: 20,
-                                }}
-                                animate={{
-                                    opacity: 1,
-                                    y: 0,
-                                }}
-                                transition={{
-                                    duration: 0.5,
-                                    delay: 0.3,
-                                }}
-                                className="space-y-6 pt-6"
-                            >
-
-                                <div className="flex items-center justify-between border-b border-border/50 pb-4">
-
-                                    <h2 className="text-xl font-bold tracking-tight flex items-center gap-2">
-
-                                        <ImageIcon className="h-5 w-5 text-accent" />
-
-                                        Selected Works
-
-                                    </h2>
-
-
-                                    <Button
-                                        asChild
-                                        variant="ghost"
-                                        size="sm"
-                                        className="text-accent hover:text-accent/80 font-semibold hidden sm:flex"
-                                    >
-
-                                        <Link href="/dashboard/portfolio">
-                                            Manage Portfolio →
-                                        </Link>
-
-                                    </Button>
-
-                                </div>
-
-
-                                {portfolio.length > 0 ? (
-
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-
-                                        {portfolio.map(
-                                            (item) => (
-
-                                                <div
-                                                    key={item.id}
-                                                    className="group relative aspect-[4/5] rounded-2xl overflow-hidden bg-muted"
-                                                >
-
-                                                    <img
-                                                        src={
-                                                            item.image_url?.[0]
-                                                        }
-                                                        alt={
-                                                            item.title
-                                                        }
-                                                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                                                    />
-
-
-                                                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent opacity-80 group-hover:opacity-90 transition-opacity" />
-
-
-                                                    <div className="absolute bottom-0 left-0 right-0 p-5">
-
-                                                        <h4 className="text-base font-bold text-white line-clamp-1">
-                                                            {item.title}
-                                                        </h4>
-
-                                                        <p className="text-xs text-white/70 line-clamp-1 mt-1">
-                                                            {item.description}
-                                                        </p>
-
-                                                    </div>
-
-                                                </div>
-
-                                            )
-                                        )}
-
-
-                                        <Link
-                                            href="/dashboard/portfolio"
-                                            className="group aspect-[4/5] rounded-2xl border border-dashed border-border/80 flex flex-col items-center justify-center gap-3 hover:border-accent hover:bg-accent/5 transition-all cursor-pointer"
-                                        >
-
-                                            <div className="h-12 w-12 rounded-full bg-secondary flex items-center justify-center group-hover:scale-110 transition-transform">
-
-                                                <Camera className="text-muted-foreground group-hover:text-accent transition-colors h-5 w-5" />
-
-                                            </div>
-
-                                            <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground group-hover:text-accent transition-colors">
-                                                Add New Work
-                                            </span>
-
-                                        </Link>
-
-                                    </div>
-
-                                ) : (
-
-                                    <div className="py-16 text-center bg-secondary/20 rounded-3xl border border-dashed border-border/50">
-
-                                        <Camera className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-
-                                        <h4 className="text-lg font-bold">
-                                            Empty Gallery
-                                        </h4>
-
-                                        <p className="text-sm text-muted-foreground mt-2 mb-6 max-w-sm mx-auto">
-                                            Your portfolio is the most critical part of your profile. Start building it now to attract clients.
-                                        </p>
-
-                                        <Button
-                                            asChild
-                                            className="rounded-xl px-6"
-                                        >
-
-                                            <Link href="/dashboard/portfolio">
-                                                Upload First Collection
-                                            </Link>
-
-                                        </Button>
-
-                                    </div>
-
-                                )}
-
-
-                                <Button
-                                    asChild
-                                    variant="outline"
-                                    size="lg"
-                                    className="w-full sm:hidden rounded-xl bg-transparent"
-                                >
-
-                                    <Link href="/dashboard/portfolio">
-                                        Manage Portfolio
-                                    </Link>
-
-                                </Button>
-
-                            </motion.section>
-
-                        )}
-
+            )}
+
+            <div className="mx-auto w-full max-w-[1300px] px-4 py-10 space-y-10">
+
+                {/* ── Profile Card ── */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5 }}
+                    className="rounded-2xl border border-gray-200 overflow-hidden bg-white shadow-sm"
+                >
+                    <div className="px-8 py-5 border-b border-gray-100 flex items-center gap-2 bg-orange-50">
+                        <Sparkles className="h-4 w-4 text-[#FF4F01]" />
+                        <span className="text-sm font-semibold text-[#FF4F01] uppercase tracking-widest">
+                            Account Overview
+                        </span>
                     </div>
 
-                </div>
+                    <div className="p-8 flex flex-col md:flex-row items-center md:items-start gap-8">
+                        {/* Avatar */}
+                        <div className="relative group shrink-0">
+                            <div
+                                className="relative h-36 w-36 md:h-44 md:w-44 rounded-full p-[3px] shadow-lg"
+                                style={{ background: "linear-gradient(135deg, #FF4F01, #FF8C42)" }}
+                            >
+                                <div className="relative h-full w-full rounded-full overflow-hidden bg-gray-100">
+                                    {profile.profile_image_url ? (
+                                        <img
+                                            src={profile.profile_image_url}
+                                            className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                            alt={displayName}
+                                        />
+                                    ) : (
+                                        <div className="h-full w-full flex items-center justify-center">
+                                            <Camera className="h-10 w-10 text-gray-300" />
+                                        </div>
+                                    )}
 
-            </main>
+                                    <div
+                                        className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center cursor-pointer transition-opacity duration-300 backdrop-blur-sm"
+                                        onClick={() => fileInputRef.current?.click()}
+                                    >
+                                        {uploading ? (
+                                            <Loader2 className="h-5 w-5 text-white animate-spin mb-1.5" />
+                                        ) : (
+                                            <Camera className="h-5 w-5 text-white mb-1.5" />
+                                        )}
+                                        <span className="text-[10px] font-bold uppercase tracking-widest text-white">
+                                            {uploading ? "Uploading" : "Update Photo"}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
 
+                            <input
+                                type="file"
+                                ref={fileInputRef}
+                                className="hidden"
+                                accept="image/*"
+                                onChange={handleImageUpload}
+                            />
+                        </div>
+
+                        {/* Name + actions */}
+                        <div className="flex-1 w-full text-center md:text-left space-y-5">
+                            {isPhotographer && (
+                                <span
+                                    className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-[#FF4F01]"
+                                    style={{ background: "rgba(255,79,1,0.1)" }}
+                                >
+                                    <CheckCircle2 className="w-3 h-3" />
+                                    Verified Creator
+                                </span>
+                            )}
+
+                            <div className="space-y-2">
+                                <Input
+                                    name="fullname"
+                                    value={profile.fullname || ""}
+                                    onChange={handleChange}
+                                    className="text-3xl md:text-4xl font-bold tracking-tight p-0 border-0 bg-transparent placeholder:text-gray-300 focus-visible:ring-0 focus-visible:ring-offset-0 h-auto text-center md:text-left"
+                                    placeholder="Your Name"
+                                />
+                                <div className="flex items-center justify-center md:justify-start gap-2 text-sm text-gray-500 capitalize">
+                                    <Award className="h-4 w-4 text-[#FF4F01]" />
+                                    {profile.role}
+                                </div>
+                            </div>
+
+                            <div className="flex flex-col sm:flex-row justify-center md:justify-start gap-3 pt-2">
+                                <button
+                                    onClick={handleSave}
+                                    disabled={saving}
+                                    className="relative overflow-hidden rounded-xl px-8 py-3 text-sm font-bold text-white uppercase tracking-widest transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:brightness-110 active:scale-[0.99]"
+                                    style={{
+                                        background: "linear-gradient(135deg, #FF4F01, #FF8C42)",
+                                        boxShadow: "0 6px 24px rgba(255,79,1,0.25)",
+                                    }}
+                                >
+                                    {saving ? (
+                                        <span className="flex items-center gap-2">
+                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                            Saving
+                                        </span>
+                                    ) : (
+                                        <span className="flex items-center gap-2">
+                                            <Save className="h-4 w-4" />
+                                            Save Settings
+                                        </span>
+                                    )}
+                                </button>
+
+                                {isPhotographer && (
+                                    <Link
+                                        href={`/photographer/${encodeURIComponent(profile.fullname)}/${profile.id}`}
+                                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-200 px-8 py-3 text-sm font-bold text-gray-700 uppercase tracking-widest hover:border-[#FF4F01] hover:text-[#FF4F01] transition-all"
+                                    >
+                                        <ExternalLink className="h-4 w-4" />
+                                        View Public Profile
+                                    </Link>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    <ProfileUploadZone userId={profile.id} />
+                </motion.div>
+
+                {/* ── Contact Details ── */}
+                <motion.section
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.1 }}
+                    className="rounded-2xl border border-gray-200 overflow-hidden bg-white shadow-sm"
+                >
+                    <div className="px-8 py-5 border-b border-gray-100 flex items-center gap-2 bg-orange-50">
+                        <Mail className="h-4 w-4 text-[#FF4F01]" />
+                        <span className="text-sm font-semibold text-[#FF4F01] uppercase tracking-widest">
+                            Contact Details
+                        </span>
+                    </div>
+
+                    <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-1.5">
+                            <Label className="block text-xs font-bold uppercase tracking-widest text-gray-400">
+                                Email Address
+                            </Label>
+                            <Input
+                                name="email"
+                                disabled
+                                value={profile.email || ""}
+                                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-500 cursor-not-allowed"
+                            />
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <Label className="block text-xs font-bold uppercase tracking-widest text-gray-400">
+                                Phone Number
+                            </Label>
+                            <div className="relative">
+                                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-300" />
+                                <Input
+                                    name="phone"
+                                    value={profile.phoneNumber || ""}
+                                    onChange={handleChange}
+                                    placeholder="+1 (555) 000-0000"
+                                    className="w-full rounded-xl border border-gray-200 bg-white pl-10 pr-4 py-3 text-sm text-gray-900 placeholder-gray-300 outline-none transition-all focus:border-[#FF4F01] focus:ring-2 focus:ring-[#FF4F01]/30"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="space-y-1.5 md:col-span-2">
+                            <Label className="block text-xs font-bold uppercase tracking-widest text-gray-400">
+                                Location
+                            </Label>
+                            <div className="relative">
+                                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-300" />
+                                <Input
+                                    name="location"
+                                    value={profile.location || ""}
+                                    onChange={handleChange}
+                                    placeholder="City, State, Country"
+                                    className="w-full rounded-xl border border-gray-200 bg-white pl-10 pr-4 py-3 text-sm text-gray-900 placeholder-gray-300 outline-none transition-all focus:border-[#FF4F01] focus:ring-2 focus:ring-[#FF4F01]/30"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </motion.section>
+
+                {/* ── Photographer Section ── */}
+                {isPhotographer && (
+                    <motion.section
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5, delay: 0.2 }}
+                        className="rounded-2xl border border-gray-200 overflow-hidden bg-white shadow-sm"
+                    >
+                        <div className="px-8 py-5 border-b border-gray-100 flex items-center gap-2 bg-orange-50">
+                            <Briefcase className="h-4 w-4 text-[#FF4F01]" />
+                            <span className="text-sm font-semibold text-[#FF4F01] uppercase tracking-widest">
+                                Professional Overview
+                            </span>
+                        </div>
+
+                        <div className="p-8 space-y-8">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                <div className="space-y-1.5">
+                                    <Label className="block text-xs font-bold uppercase tracking-widest text-gray-400">
+                                        Hourly Rate ($)
+                                    </Label>
+                                    <Input
+                                        name="hourlyRate"
+                                        type="number"
+                                        value={profile.hourlyRate || ""}
+                                        onChange={handleChange}
+                                        placeholder="150"
+                                        className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 placeholder-gray-300 outline-none transition-all focus:border-[#FF4F01] focus:ring-2 focus:ring-[#FF4F01]/30"
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <Label className="block text-xs font-bold uppercase tracking-widest text-gray-400">
+                                        Years Experience
+                                    </Label>
+                                    <Input
+                                        name="experience"
+                                        type="number"
+                                        value={profile.experience || ""}
+                                        onChange={handleChange}
+                                        placeholder="5"
+                                        className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 placeholder-gray-300 outline-none transition-all focus:border-[#FF4F01] focus:ring-2 focus:ring-[#FF4F01]/30"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <Label className="block text-xs font-bold uppercase tracking-widest text-gray-400">
+                                    Biography & Creative Vision
+                                </Label>
+                                <Textarea
+                                    name="bio"
+                                    value={profile.bio || ""}
+                                    onChange={handleChange}
+                                    rows={5}
+                                    placeholder="Describe your style, vision, and what makes your work unique..."
+                                    className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 placeholder-gray-300 outline-none transition-all resize-none focus:border-[#FF4F01] focus:ring-2 focus:ring-[#FF4F01]/30"
+                                />
+                            </div>
+
+                            <div className="space-y-3">
+                                <Label className="block text-xs font-bold uppercase tracking-widest text-gray-400">
+                                    Creative Specialties
+                                </Label>
+                                <div className="flex flex-wrap gap-2">
+                                    {AVAILABLE_SPECIALTIES.map((specialty) => {
+                                        const isSelected =
+                                            profile.specialties?.includes(specialty);
+                                        return (
+                                            <button
+                                                key={specialty}
+                                                type="button"
+                                                onClick={() => toggleSpecialty(specialty)}
+                                                className={`rounded-full border px-4 py-1.5 text-xs font-semibold uppercase tracking-wide transition-all duration-200 ${
+                                                    isSelected
+                                                        ? "border-[#FF4F01] bg-[#FF4F01] text-white shadow-md shadow-[#FF4F01]/20"
+                                                        : "border-gray-200 bg-white text-gray-500 hover:border-[#FF4F01] hover:text-[#FF4F01]"
+                                                }`}
+                                            >
+                                                {specialty}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <Label className="block text-xs font-bold uppercase tracking-widest text-gray-400">
+                                    External Portfolio Link
+                                </Label>
+                                <div className="relative">
+                                    <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-300" />
+                                    <Input
+                                        name="portfolio_url"
+                                        value={profile.portfolio_url || ""}
+                                        onChange={handleChange}
+                                        placeholder="https://your-portfolio.com"
+                                        className="w-full rounded-xl border border-gray-200 bg-white pl-10 pr-4 py-3 text-sm text-gray-900 placeholder-gray-300 outline-none transition-all focus:border-[#FF4F01] focus:ring-2 focus:ring-[#FF4F01]/30"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </motion.section>
+                )}
+
+                {/* ── Selected Works ── */}
+                {isPhotographer && (
+                    <motion.section
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5, delay: 0.3 }}
+                        className="rounded-2xl border border-gray-200 overflow-hidden bg-white shadow-sm"
+                    >
+                        <div className="px-8 py-5 border-b border-gray-100 flex items-center justify-between gap-2 bg-orange-50">
+                            <div className="flex items-center gap-2">
+                                <ImageIcon className="h-4 w-4 text-[#FF4F01]" />
+                                <span className="text-sm font-semibold text-[#FF4F01] uppercase tracking-widest">
+                                    Selected Works
+                                </span>
+                            </div>
+                            <Link
+                                href="/dashboard/portfolio"
+                                className="inline-flex items-center gap-1 text-xs font-bold uppercase tracking-widest text-[#FF4F01] hover:underline"
+                            >
+                                Manage Portfolio →
+                            </Link>
+                        </div>
+
+                        <div className="p-8">
+                            {portfolio.length > 0 ? (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                                    {portfolio.map((item) => (
+                                        <div
+                                            key={item.id}
+                                            className="group relative aspect-[4/5] rounded-xl overflow-hidden border border-gray-100 hover:border-[#FF4F01]/40 transition-all hover:shadow-lg"
+                                        >
+                                            <img
+                                                src={item.image_url?.[0]}
+                                                alt={item.title}
+                                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                            />
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                                            <div className="absolute bottom-0 left-0 right-0 p-4">
+                                                <h4 className="text-base font-bold text-white line-clamp-1">
+                                                    {item.title}
+                                                </h4>
+                                                <p className="text-xs text-white/70 line-clamp-1 mt-1">
+                                                    {item.description}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    ))}
+
+                                    <Link
+                                        href="/dashboard/portfolio"
+                                        className="group aspect-[4/5] rounded-xl border-2 border-dashed border-orange-200 flex flex-col items-center justify-center gap-3 hover:border-[#FF4F01] hover:bg-orange-50/40 transition-all cursor-pointer"
+                                    >
+                                        <div
+                                            className="h-12 w-12 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform"
+                                            style={{ background: "rgba(255,79,1,0.1)" }}
+                                        >
+                                            <Camera className="h-5 w-5 text-[#FF4F01]" />
+                                        </div>
+                                        <span className="text-[10px] font-bold uppercase tracking-widest text-[#FF4F01]">
+                                            Add New Work
+                                        </span>
+                                    </Link>
+                                </div>
+                            ) : (
+                                <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-orange-200 bg-orange-50/40 py-16 text-center">
+                                    <div
+                                        className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl"
+                                        style={{ background: "rgba(255,79,1,0.1)" }}
+                                    >
+                                        <Camera className="h-7 w-7 text-[#FF4F01]" />
+                                    </div>
+                                    <h4 className="text-lg font-bold text-gray-900">Empty Gallery</h4>
+                                    <p className="text-sm text-gray-400 mt-2 mb-6 max-w-sm">
+                                        Your portfolio is the most critical part of your profile. Start building it now to attract clients.
+                                    </p>
+                                    <Link
+                                        href="/dashboard/portfolio"
+                                        className="inline-flex items-center gap-2 rounded-xl px-6 py-2.5 text-sm font-bold text-white uppercase tracking-widest transition-all hover:brightness-110"
+                                        style={{
+                                            background: "linear-gradient(135deg, #FF4F01, #FF8C42)",
+                                            boxShadow: "0 6px 24px rgba(255,79,1,0.25)",
+                                        }}
+                                    >
+                                        Upload First Collection
+                                    </Link>
+                                </div>
+                            )}
+                        </div>
+                    </motion.section>
+                )}
+            </div>
         </div>
     );
 }

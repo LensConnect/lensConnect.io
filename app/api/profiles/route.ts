@@ -1,5 +1,6 @@
 import { NextResponse, NextRequest } from 'next/server'
 import { db } from '@/app/src'
+import { sql } from 'drizzle-orm'
 import { photographer_profiles, users } from '@/app/src/db/schema'
 
 
@@ -161,5 +162,90 @@ export async function GET(req: NextRequest) {
   } catch (error) {
     console.error('Error fetching profile:', error)
     return NextResponse.json({ error: 'Failed to fetch user profile' }, { status: 500 })
+  }
+}
+
+
+
+
+export async function PATCH(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const { userId, role, ...fieldsToUpdate } = body;
+
+    if (!userId) {
+      return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
+    }
+
+    const targetUserId = Number(userId);
+
+    // 1. Fetch user's role using modern Drizzle v2 Object Syntax
+    const userResult = await db.query.users.findFirst({
+      where: { id: targetUserId },
+      columns: { role: true },
+    });
+
+    if (!userResult) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    const dbRole = userResult.role;
+
+    // 2. Map structural whitelist parameters per database table properties
+    const allowedPhotographerFields = [
+      'fullname', 'email', 'phoneNumber', 'bio', 'location',
+      'experience', 'hourlyRate', 'specialties', 'availability',
+      'portfolio_image_url', 'profile_image_url'
+    ];
+
+    const allowedClientFields = [
+      'phoneNumber', 'imageUrl', 'bio', 'website', 'location', 'profile_image_url'
+    ];
+
+    const allowedFields = dbRole === 'photographer' ? allowedPhotographerFields : allowedClientFields;
+
+    // Sanitize inbound mutations to preserve column validation schemas
+    const sanitizedUpdates: Record<string, any> = {};
+    for (const [key, value] of Object.entries(fieldsToUpdate)) {
+      if (allowedFields.includes(key)) {
+        // Special case: If value is an array (like specialties), stringify it for MySQL JSON storage
+        sanitizedUpdates[key] = Array.isArray(value) ? JSON.stringify(value) : value;
+      }
+    }
+
+    if (Object.keys(sanitizedUpdates).length === 0) {
+      return NextResponse.json({ error: 'No valid fields provided to update' }, { status: 400 });
+    }
+
+    // 3. Routing Table Definitions safely
+    const targetTable = dbRole === 'photographer' ? 'photographer_profiles' : 'profiles';
+
+    // 4. Construct safe, parameterized SET query strings for raw SQL processing
+    const setChunks = Object.entries(sanitizedUpdates).map(([key, value]) => {
+      // sql.raw cleanly handles structural columns while values remain dynamically parameterized (?)
+      return sql`\`${sql.raw(key)}\` = ${value}`;
+    });
+
+    // Join pieces together with commas: `column1` = ?, `column2` = ?
+    const setClause = sql.join(setChunks, sql.raw(', '));
+
+    // 5. Execute raw SQL payload injection safely via db.execute
+    await db.execute(sql`
+      UPDATE \`${sql.raw(targetTable)}\`
+      SET ${setClause}
+      WHERE userId = ${targetUserId}
+    `);
+
+    return NextResponse.json({
+      message: 'Profile updated successfully ',
+      success: true
+    }, { status: 200 });
+
+  } catch (error) {
+    console.error('Profile raw SQL update error:', error);
+    return NextResponse.json(
+      { error: 'Failed to update profile' },
+      { status: 500 }
+    );
   }
 }

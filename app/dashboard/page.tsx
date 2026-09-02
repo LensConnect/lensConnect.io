@@ -51,11 +51,13 @@ export default function PhotographerDashboardPage() {
   const fetchBookings = async () => {
 
 
-    if(! user) return;
+    if(!user){
+      'user must be signed in'
+    }
 
     setLoading(true);
 
-    const response = await fetch(`/api/get_bookings?photographerId=${user.id}`, {method: "GET", headers:{'Content-Type':'application/json'}})
+    const response = await fetch(`/api/get_bookings_photographerId?photographerId=${user?.id}`, {method: "GET", headers:{'Content-Type':'application/json'}})
 
     if(!response.ok){
       toast.error("Failed to fetch bookings")
@@ -64,6 +66,7 @@ export default function PhotographerDashboardPage() {
     }
     const data = await response.json();
     setBookings(data.data || []);
+    return data
     setLoading(false);
    /*  if (!user) return;
     setLoading(true);
@@ -129,7 +132,7 @@ export default function PhotographerDashboardPage() {
         {/* Cinematic Header */}
         <div className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-border/50 pb-8">
           <div className="space-y-2">
-            <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-foreground">Overview</h1>
+            <h1 className="text-4xl md:text-5xl font-bold text-foreground">Overview</h1>
             <p className="text-lg text-muted-foreground font-normal">Welcome back, <span className="text-foreground font-medium">{user.fullname}</span></p>
           </div>
           <div className="flex gap-3">

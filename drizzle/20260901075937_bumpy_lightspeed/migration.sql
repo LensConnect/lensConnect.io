@@ -1,0 +1,1 @@
+ALTER TABLE `photographer_portfolios` MODIFY COLUMN `category` json DEFAULT ('[]');

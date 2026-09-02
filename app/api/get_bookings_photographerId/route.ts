@@ -2,7 +2,7 @@ import { NextResponse, NextRequest } from 'next/server';
 import { db } from '@/app/src';
 import { booking } from '@/app/src/db/schema';
 import { sql } from 'drizzle-orm';
-
+import {eq} from 'drizzle-orm'
 export async function GET(req: NextRequest) {
     try {
         const { searchParams } = new URL(req.url);
@@ -12,11 +12,18 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ error: 'No photographer with this id found', status: 404, success: false });
         }
 
+       const existingBookings =  await db.execute(sql` SELECT * FROM booking WHERE photographerId = ${id} `)
+
+        if(!Array.isArray(existingBookings)){
+            return NextResponse.json([]);
+        }
+
         const [data] = await db.execute(sql`
-            SELECT b.*, u.fullname as client_name
+            SELECT b.*, u.fullname as client_name, u.email as client_email
             FROM booking b
             LEFT JOIN users u ON b.clientId = u.id
-            WHERE b.photographerId = ${id}
+            LEFT JOIN photographer_profiles p ON photographerId = p.id
+            WHERE b.photographerId = ${id} OR userId = ${id};
         `);
 
         if (!Array.isArray(data)) {

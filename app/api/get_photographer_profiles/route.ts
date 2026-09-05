@@ -46,6 +46,7 @@ export async function GET(req: NextRequest) {
             bio: row.bio || '',
             fullname: row.fullname || '',
             hourlyRate: Number(row.hourlyRate) || 0,
+            location: String(row.location) || '',
             // Safely parse JSON strings if the driver returns it as text
             specialties: typeof row.specialties === 'string' 
                 ? JSON.parse(row.specialties) 

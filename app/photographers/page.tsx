@@ -16,6 +16,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { useQuery } from "@tanstack/react-query"
 import { PhotographerProfile } from "@/lib/types"
 
+
 const specialties = ["Events", "Portraits", "Products", "Real Estate", "Fashion", "Family", "Weddings", "Commercial", 'Sports']
 
 
@@ -27,7 +28,9 @@ export default function SearchPage() {
   const [minRating, setMinRating] = useState("0")
   const [sortBy, setSortBy] = useState("rating")
   const [showFilters, setShowFilters] = useState(true)
-
+  const [result, setResult] = useState("")
+  const [naturalLanguageInput, setNaturalLanguageInput] = useState('');
+   const [aiSearching, setAiSearching] = useState(false)
   const toggleSpecialty = (specialty: string) => {
     setSelectedSpecialties((prev) =>
       prev.includes(specialty) ? prev.filter((s) => s !== specialty) : [...prev, specialty],
@@ -110,6 +113,40 @@ export default function SearchPage() {
   }, [photographers, searchQuery, location, selectedSpecialties, priceRange, minRating, sortBy])
 
 
+  const search = async () =>{
+    try{
+    const response = await fetch('/api/search', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({userNaturalLanguagePrompt: naturalLanguageInput })})
+    
+    
+    if(!response.ok){
+      console.error('Error trying to search the language')
+    }
+
+    const data = await response.json()
+
+    if(data.success){
+      setSearchQuery(data.filters.searchQuery || "")
+        setLocation(data.filters.location || "")
+        setSelectedSpecialties(data.filters.selectedSpecialties || [])
+        setMinRating(data.filters.minRating?.toString() || "0")
+
+        if(data.filters.maxPrice){
+          setPriceRange([data.filters.minPrice || 0, data.filters.maxPrice])
+        }
+
+        if (data.filters.sortBy) {
+          setSortBy(data.filters.sortBy)
+        }
+    }
+   
+    setResult(data)
+  }catch (err) {
+      console.error('Error trying to search the language:', err)
+    } finally {
+      setAiSearching(false)
+    }
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-background selection:bg-accent selection:text-white">
       <div className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/40">
@@ -156,7 +193,12 @@ export default function SearchPage() {
                         onChange={(e) => setSearchQuery(e.target.value)}
                       />
                     </div>
+                    <button className="bg-gray-300 p-3 text-17 w-full rounded-full font-semibold" onClick={()=>{search()}}>
+                      Search
+                    </button>
                   </div>
+
+                  <p className="text-18 tex-tblack font-bold">Check:"wedding photographers in Lagos under 300k"  </p>
 
                   <div className="space-y-3">
                     <Label htmlFor="location" className="text-xs font-semibold tracking-widest uppercase text-muted-foreground">Location</Label>
@@ -347,7 +389,7 @@ export default function SearchPage() {
                   Clear all filters
                 </Button>
               </div>
-            )}
+            )} 
           </div>
         </div>
       </div>
